@@ -7,6 +7,7 @@ ADK session id (spike S2), which is our game id.
 
 import logging
 import os
+from urllib.parse import urlsplit
 
 import uvicorn
 from dotenv import load_dotenv
@@ -41,7 +42,17 @@ def build_app(settings: SellerSettings | None = None) -> Starlette:
     runner = Runner(
         app_name=APP_NAME, agent=agent, session_service=DatabaseSessionService(db_engine=adk_engine)
     )
-    return to_a2a(agent, host=settings.host, port=settings.port, runner=runner)
+    # The agent card advertises the URL clients must call back. That is the PUBLIC address
+    # (e.g. http://seller:8200 in compose, the Cloud Run URL in prod), not the bind address:
+    # a card saying 0.0.0.0 would send the api's messages to itself.
+    public = urlsplit(settings.public_url)
+    return to_a2a(
+        agent,
+        host=public.hostname or settings.host,
+        port=public.port or (443 if public.scheme == "https" else 80),
+        protocol=public.scheme or "http",
+        runner=runner,
+    )
 
 
 def run() -> None:
