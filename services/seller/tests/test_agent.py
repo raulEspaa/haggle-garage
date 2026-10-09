@@ -240,6 +240,28 @@ async def test_close_deal_gets_a_code_made_idempotency_key(
     assert tuple(status[0]) == ("deal", 38_000)
 
 
+async def test_a_closed_deal_is_always_announced_with_its_price(
+    play: Any, new_game: NewGame
+) -> None:
+    game = new_game(level=1, turn_count=0)
+    script = two_step(
+        call("close_deal", price_usd=38_000, idempotency_key="x"),
+        lambda r: reply("Sold, congratulations!", "accept", None),  # wrong intent, no price
+    )
+
+    answer = await play(game, "Deal at 38,000!", script)
+
+    assert answer == {"message": "Sold, congratulations!", "intent": "close", "price_usd": 38_000}
+
+
+async def test_close_without_a_closed_deal_is_downgraded(play: Any, new_game: NewGame) -> None:
+    game = new_game(level=1, turn_count=0)
+
+    answer = await play(game, "Deal at 38,000?", lambda r: reply("Deal!", "close", 38_000))
+
+    assert answer["intent"] == "accept"  # the buyer must not think the car is sold
+
+
 async def test_l2_reply_near_the_floor_is_blocked(
     play: Any, new_game: NewGame, migrated_engine: Engine
 ) -> None:

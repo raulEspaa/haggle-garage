@@ -61,7 +61,7 @@ _VERSION = re.compile(r"prompt_version:\s*(\S+)")
 _HEADER_COMMENT = re.compile(r"\A<!--.*?-->\s*", re.DOTALL)
 IDEMPOTENCY_NAMESPACE = uuid.UUID("6f1d2a3b-4c5d-4e6f-8a9b-0c1d2e3f4a5b")
 MODEL_RETRY = types.HttpRetryOptions(
-    attempts=3, initial_delay=1.0, max_delay=4.0, http_status_codes=[429, 500, 502, 503, 504]
+    attempts=4, initial_delay=2.0, max_delay=20.0, http_status_codes=[429, 500, 502, 503, 504]
 )
 logger = logging.getLogger(__name__)
 
@@ -157,6 +157,7 @@ class SellerCallbacks:
             | set(extract_amounts(buyer_text))
         )
         ctx.state["code_numbers"] = list(ctx.state.get("code_numbers", []))
+        ctx.state["deal"] = None  # set by after_tool if close_deal succeeds THIS turn
         ctx.state["turn_open"] = True
         return None
 
@@ -292,6 +293,10 @@ class SellerCallbacks:
         ctx.state["guards"] = [*ctx.state.get("guards", []), *found]
         if turn is None or must_block(level, found):
             return safe_reply(level, ctx.state.get("last_code_price"))
+        fixed = _intent_matches_deal(turn, ctx.state.get("deal"))
+        if fixed is not None:
+            ctx.state["guards"] = [*ctx.state["guards"], "close_intent_fixed"]
+            return fixed
         if turn.intent is SellerIntent.COUNTER and turn.price_usd is not None:
             ctx.state["last_quoted"] = turn.price_usd
         return None
@@ -382,6 +387,24 @@ class SellerCallbacks:
         return None
 
 
+def _intent_matches_deal(turn: SellerTurn, deal: dict[str, Any] | None) -> SellerTurn | None:
+    """Clients (the api, the buyer agent) end the game on intent `close`, so `close` must mean
+    exactly "close_deal succeeded this turn, at this price". Code knows that; the model may not.
+
+    Found in week 5: the L1 seller closed a deal but answered `close` with `price_usd: null`, so
+    the buyer agent did not see the deal and kept negotiating with a closed game.
+    """
+    if deal is not None:
+        price = deal.get("price_usd")
+        if turn.intent is SellerIntent.CLOSE and turn.price_usd == price:
+            return None
+        return SellerTurn(message=turn.message, intent=SellerIntent.CLOSE, price_usd=price)
+    if turn.intent is SellerIntent.CLOSE:  # the model claims a sale that did not happen
+        intent = SellerIntent.ACCEPT if turn.price_usd is not None else SellerIntent.INFORM
+        return turn.model_copy(update={"intent": intent})
+    return None
+
+
 def build_seller_agent(
     settings: SellerSettings, repo: SellerRepository, model: str | BaseLlm | None = None
 ) -> LlmAgent:
@@ -427,8 +450,8 @@ def build_seller_agent(
         generate_content_config=types.GenerateContentConfig(
             temperature=settings.temperature,
             max_output_tokens=settings.max_output_tokens,
-            # Gemini answers 503 "high demand" / 429 now and then. Retry with backoff, within
-            # the api's 60 s budget: 3 attempts, delays of about 1 s and 2 s.
+            # Gemini answers 503 "high demand" / 429 (free tier: 15 requests/minute) now and
+            # then. Retry with backoff, within the api's 90 s budget: 4 attempts, ~2 s, 4 s, 8 s.
             http_options=types.HttpOptions(retry_options=MODEL_RETRY),
         ),
         before_agent_callback=callbacks.before_agent,
