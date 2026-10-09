@@ -30,7 +30,9 @@ from typing import Any
 from google.adk.agents import LlmAgent
 from google.adk.agents.context import Context
 from google.adk.agents.readonly_context import ReadonlyContext
+from google.adk.models._capabilities import LlmCapabilities
 from google.adk.models.base_llm import BaseLlm
+from google.adk.models.google_llm import Gemini
 from google.adk.models.llm_request import LlmRequest
 from google.adk.models.llm_response import LlmResponse
 from google.adk.tools.base_tool import BaseTool
@@ -64,6 +66,22 @@ MODEL_RETRY = types.HttpRetryOptions(
     attempts=4, initial_delay=2.0, max_delay=20.0, http_status_codes=[429, 500, 502, 503, 504]
 )
 logger = logging.getLogger(__name__)
+# A normal turn needs at most ~4 model calls (lookup, evaluate_offer, close_deal, final answer).
+MAX_MODEL_CALLS_PER_TURN = 6
+
+
+class SellerGemini(Gemini):
+    """Gemini that always delivers its final answer through ADK's `set_model_response` tool.
+
+    ADK picks the path from the backend: on Vertex AI it asks Gemini for tools AND a response
+    schema in the same request. Live on Vertex (week 5) that made gemini-3.1-flash-lite call
+    evaluate_offer in a loop and never answer. The set_model_response path is the one played
+    live since week 3, and the output guards cover it. Same behaviour on every backend.
+    """
+
+    @property
+    def capabilities(self) -> LlmCapabilities:
+        return LlmCapabilities(output_schema_and_tools=False)
 
 
 @cache
@@ -158,6 +176,7 @@ class SellerCallbacks:
         )
         ctx.state["code_numbers"] = list(ctx.state.get("code_numbers", []))
         ctx.state["deal"] = None  # set by after_tool if close_deal succeeds THIS turn
+        ctx.state["model_calls"] = 0
         ctx.state["turn_open"] = True
         return None
 
@@ -202,6 +221,15 @@ class SellerCallbacks:
     # --------------------------------------------------------------------- model level
     async def before_model(self, ctx: Context, llm_request: LlmRequest) -> LlmResponse | None:
         level = ctx.state["game"]["level"]
+        ctx.state["model_calls"] = ctx.state.get("model_calls", 0) + 1
+        if ctx.state["model_calls"] > MAX_MODEL_CALLS_PER_TURN:
+            # CIRCUIT BREAKER. A model stuck in a tool loop would burn tokens until the client
+            # times out (seen live on Vertex). Stop and answer with the fixed safe reply.
+            with observation("seller.loop_breaker", "guardrail") as obs:
+                obs.update(output={"blocked": True, "model_calls": ctx.state["model_calls"]})
+            ctx.state["guards"] = [*ctx.state.get("guards", []), "model_call_limit"]
+            reply = safe_reply(Level(level), ctx.state.get("last_code_price"))
+            return LlmResponse(content=_reply_content(reply))
         if level == Level.BLIND and "evaluate_offer" not in llm_request.tools_dict:
             # FAIL CLOSED. If the MCP toolset failed to load, ADK logs an error and runs the agent
             # WITHOUT tools. At L3 that would mean a model inventing prices: refuse instead.
@@ -428,7 +456,7 @@ def build_seller_agent(
         name="haggle_seller",
         description="Used-car dealer agent negotiating the sale of one listed classic car per "
         "conversation. One conversation (contextId) is one game created by the Haggle API.",
-        model=model or settings.model_id,
+        model=model or SellerGemini(model=settings.model_id),
         instruction=callbacks.instruction,
         tools=[
             McpToolset(

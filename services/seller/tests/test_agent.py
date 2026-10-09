@@ -15,6 +15,7 @@ import pytest
 import uvicorn
 from google.adk.models._capabilities import LlmCapabilities
 from google.adk.models.base_llm import BaseLlm
+from google.adk.models.google_llm import Gemini
 from google.adk.models.llm_request import LlmRequest
 from google.adk.models.llm_response import LlmResponse
 from google.adk.runners import Runner
@@ -26,7 +27,7 @@ from sqlalchemy import Engine, text
 from haggle_mcp.rag.embeddings import FakeEmbedder
 from haggle_mcp.server import build_app as build_mcp_app
 from haggle_mcp.settings import McpSettings
-from haggle_seller.agent import build_seller_agent
+from haggle_seller.agent import MAX_MODEL_CALLS_PER_TURN, SellerGemini, build_seller_agent
 from haggle_seller.guards import canary_for
 from haggle_seller.repository import SellerRepository
 from haggle_seller.settings import SellerSettings
@@ -381,3 +382,33 @@ async def test_failed_model_call_gives_the_turn_back(
 
     turns = sql(migrated_engine, "SELECT seq FROM turns WHERE game_id = :g ORDER BY seq", game)
     assert [t.seq for t in turns] == [1, 2]  # the retry is turn 1, with no gap
+
+
+async def test_a_tool_loop_is_cut_by_the_circuit_breaker(
+    play: Any, new_game: NewGame, migrated_engine: Engine
+) -> None:
+    """Live on Vertex the model called evaluate_offer over and over and never answered."""
+    game = new_game(level=3, turn_count=0)
+    calls: list[int] = []
+
+    def loop(request: LlmRequest) -> LlmResponse:
+        calls.append(1)
+        return call("evaluate_offer", offer_usd=30_000)
+
+    answer = await play(game, "I offer $30,000", loop)
+
+    assert len(calls) == MAX_MODEL_CALLS_PER_TURN
+    assert answer["intent"] == "counter"  # L3 safe reply: the last code-issued price
+    guards = sql(migrated_engine, "SELECT guards FROM turns WHERE game_id = :g AND seq = 2", game)
+    assert "model_call_limit" in guards[0].guards["triggered"]
+
+
+def test_the_seller_model_uses_set_model_response_on_vertex_too(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("GOOGLE_GENAI_USE_VERTEXAI", "true")
+
+    model = SellerGemini(model="gemini-3.1-flash-lite")
+
+    assert Gemini(model="gemini-3.1-flash-lite").capabilities.output_schema_and_tools  # ADK default
+    assert not model.capabilities.output_schema_and_tools
