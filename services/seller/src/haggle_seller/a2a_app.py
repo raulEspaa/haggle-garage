@@ -19,6 +19,7 @@ from starlette.applications import Starlette
 
 from haggle_core.db.session import create_engine, create_session_factory
 from haggle_core.settings import get_settings
+from haggle_core.tracing import TraceContextMiddleware
 from haggle_seller.agent import build_seller_agent
 from haggle_seller.repository import SellerRepository
 from haggle_seller.settings import SellerSettings, get_seller_settings
@@ -46,13 +47,17 @@ def build_app(settings: SellerSettings | None = None) -> Starlette:
     # (e.g. http://seller:8200 in compose, the Cloud Run URL in prod), not the bind address:
     # a card saying 0.0.0.0 would send the api's messages to itself.
     public = urlsplit(settings.public_url)
-    return to_a2a(
+    app = to_a2a(
         agent,
         host=public.hostname or settings.host,
         port=public.port or (443 if public.scheme == "https" else 80),
         protocol=public.scheme or "http",
         runner=runner,
     )
+    # A caller that sends `traceparent` (the buyer agent) gets the seller's spans inside ITS
+    # trace: buyer -> seller -> MCP in one Langfuse tree. Without the header nothing changes.
+    app.add_middleware(TraceContextMiddleware)
+    return app
 
 
 def run() -> None:

@@ -151,7 +151,7 @@ typed observations as nodes. To see inside the MCP server too:
 | Piece | Where |
 |-------|-------|
 | `traceparent` (W3C Trace Context) captured in `before_tool` and sent as an MCP header | seller `agent.py` |
-| `TraceContextMiddleware` adopts the caller's trace for the whole request | `haggle_mcp/telemetry.py` |
+| `TraceContextMiddleware` adopts the caller's trace for the whole request | `haggle_core/tracing.py` (moved there in week 5) |
 | Typed observations: `tool`, `evaluator` (policy), `guardrail` (deal validation + seller guards), `retriever` + `embedding` (RAG) | `haggle_core/tracing.py` → `observation()` |
 | Trace tags/metadata (`level-3`, car, prompt version, model) via `langfuse.trace.*` attributes | `tag_current_trace()` |
 | **Never the floor** in any observation: trace storage is one more place a secret can leak | review rule |

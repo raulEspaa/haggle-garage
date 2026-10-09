@@ -24,13 +24,12 @@ from starlette.responses import JSONResponse
 from haggle_core.contracts import CloseResultOut, OfferDecisionOut, SheetHitOut, SheetResultsOut
 from haggle_core.db.session import create_engine, create_session_factory
 from haggle_core.settings import get_settings
-from haggle_core.tracing import observation, setup_langfuse
+from haggle_core.tracing import TraceContextMiddleware, observation, setup_langfuse
 from haggle_mcp.auth import GAME_HEADER, ClientScope, TokenAuthMiddleware, scope_from_headers
 from haggle_mcp.rag.embeddings import Embedder, GeminiEmbedder
 from haggle_mcp.rag.store import SheetRetriever
 from haggle_mcp.service import GameNotOpenError, NegotiationService
 from haggle_mcp.settings import McpSettings, get_mcp_settings
-from haggle_mcp.telemetry import TraceContextMiddleware
 
 MAX_PRICE_USD = 10_000_000
 

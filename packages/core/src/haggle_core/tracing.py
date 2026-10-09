@@ -14,7 +14,7 @@ why services create Langfuse observations instead of relying on generic instrume
 """
 
 import os
-from collections.abc import Iterator, Mapping
+from collections.abc import Awaitable, Callable, Iterator, Mapping, MutableMapping
 from contextlib import contextmanager
 from typing import Any, Literal
 
@@ -84,6 +84,21 @@ def observation(
         yield obs
 
 
+@contextmanager
+def trace_session(
+    session_id: str, tags: list[str], metadata: Mapping[str, str] | None = None
+) -> Iterator[None]:
+    """Session id, tags and metadata for every span started inside this block (Langfuse's
+    `propagate_attributes`). Enter it BEFORE creating the root span of the trace."""
+    if not _enabled:
+        yield
+        return
+    from langfuse import propagate_attributes
+
+    with propagate_attributes(session_id=session_id, tags=tags, metadata=dict(metadata or {})):
+        yield
+
+
 def tag_current_trace(tags: list[str], metadata: Mapping[str, str]) -> None:
     """Attach filterable tags and metadata to the whole trace (Langfuse `langfuse.trace.*`
     OpenTelemetry attribute convention). Works from any span inside the trace."""
@@ -109,3 +124,29 @@ def attached_trace_context(headers: Mapping[str, str]) -> Iterator[None]:
         yield
     finally:
         otel_context.detach(token)
+
+
+# Plain ASGI types, so core does not depend on Starlette.
+_Scope = MutableMapping[str, Any]
+_Receive = Callable[[], Awaitable[MutableMapping[str, Any]]]
+_Send = Callable[[MutableMapping[str, Any]], Awaitable[None]]
+_ASGIApp = Callable[[_Scope, _Receive, _Send], Awaitable[None]]
+
+
+class TraceContextMiddleware:
+    """ASGI middleware: adopt the caller's W3C `traceparent` for the whole request.
+
+    Every span the request creates (ADK agent spans in the seller, Langfuse observations in the
+    MCP tools) then becomes a child of the CALLER's span: one trace across services.
+    """
+
+    def __init__(self, app: _ASGIApp) -> None:
+        self.app = app
+
+    async def __call__(self, scope: _Scope, receive: _Receive, send: _Send) -> None:
+        if scope["type"] != "http":
+            await self.app(scope, receive, send)
+            return
+        headers = {k.decode("latin-1"): v.decode("latin-1") for k, v in scope["headers"]}
+        with attached_trace_context(headers):
+            await self.app(scope, receive, send)
