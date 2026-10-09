@@ -1,6 +1,6 @@
 # ADR-0003: Gemini API (AI Studio) over Vertex AI / Gemini Enterprise Agent Platform
 
-- **Status:** Proposed
+- **Status:** Superseded by [ADR-0013](0013-gemini-on-vertex-ai.md) (2026-10-09). The facts and trade-offs below still apply.
 - **Date:** 2026-10-08
 
 ## Context

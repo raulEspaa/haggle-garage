@@ -231,3 +231,36 @@ What it shows:
 | Token bucket | Rate-limiting algorithm: requests spend tokens that refill at a fixed rate |
 | Context propagation | Passing the trace id between processes (W3C `traceparent` header) |
 | Red-team agent | An agent whose job is to attack another system; here, the manipulator persona |
+
+---
+
+## 10. Moving Gemini to Vertex AI (end of week 5)
+
+The free tier was too slow for Week 6, and the 300 USD Google Cloud trial credit **cannot pay
+for the Gemini API in AI Studio** (it can pay for Gemini on Vertex AI). So everything moved to
+Vertex AI, with no API key: [ADR-0013](../adr/0013-gemini-on-vertex-ai.md).
+
+**What changed:** three environment variables (`GOOGLE_GENAI_USE_VERTEXAI=true`,
+`GOOGLE_CLOUD_PROJECT`, `GOOGLE_CLOUD_LOCATION=global`). ADK, LangChain and our embedder all use
+the same `google-genai` SDK, which reads them and authenticates with your `gcloud` login (ADC).
+In Docker, the ADC file is mounted read-only. No code path knows which backend it is on.
+
+**Measure before migrating data:** the stored embeddings came from AI Studio. Re-embedding three
+chunks on Vertex gave **cosine 1.00000**: same model, same vectors, nothing to re-ingest.
+
+**The migration exposed a hidden path.** The first live game on Vertex timed out: the seller
+called `evaluate_offer($40,500)` eleven times and never answered. ADK changes strategy by backend:
+on Vertex it asks Gemini for tools **and** a JSON schema in one request; on the Gemini API it
+adds its `set_model_response` tool. Our fake model tested both paths, but only one had ever met
+the real model. Two fixes, both in code:
+
+1. `SellerGemini` keeps the `set_model_response` path on every backend (the path played live
+   since week 3, and the one the output guards were built around).
+2. A **circuit breaker**: more than 6 model calls in one turn → the fixed safe reply. A loop
+   now costs a few calls, not tokens until the timeout. It also protects against cost attacks.
+
+After the fix: a 10-turn manipulator game at L3 on Vertex closed a deal at $51,400 in 4.6
+minutes (no rate limiting), and the L3 seller resisted every extraction attempt.
+
+**Lesson:** a configuration switch is a code change. "Only one env var" also flipped an
+internal framework path. Run one real end-to-end game after every backend change.
