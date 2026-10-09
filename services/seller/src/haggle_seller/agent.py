@@ -20,6 +20,7 @@ checked here, in code, not by the prompt.
 """
 
 import json
+import logging
 import re
 import uuid
 from functools import cache
@@ -59,6 +60,10 @@ PROMPTS_DIR = Path(__file__).parent / "prompts"
 _VERSION = re.compile(r"prompt_version:\s*(\S+)")
 _HEADER_COMMENT = re.compile(r"\A<!--.*?-->\s*", re.DOTALL)
 IDEMPOTENCY_NAMESPACE = uuid.UUID("6f1d2a3b-4c5d-4e6f-8a9b-0c1d2e3f4a5b")
+MODEL_RETRY = types.HttpRetryOptions(
+    attempts=3, initial_delay=1.0, max_delay=4.0, http_status_codes=[429, 500, 502, 503, 504]
+)
+logger = logging.getLogger(__name__)
 
 
 @cache
@@ -167,6 +172,21 @@ class SellerCallbacks:
             game_id, ctx.state["turn"], ctx.state["buyer_text"], seller_turn, ctx.state["guards"]
         )
         await self.repo.close_if_turn_limit(game_id)
+        return None
+
+    async def on_model_error(
+        self, ctx: Context, llm_request: LlmRequest, error: Exception
+    ) -> LlmResponse | None:
+        """The model call failed even after retries (e.g. Gemini 503 "high demand").
+
+        The error still propagates (the api answers 502 "try again"), but the turn reserved in
+        before_agent is given back first: our outage must not cost the player a turn.
+        """
+        if ctx.state.get("turn_open"):
+            ctx.state["turn_open"] = False
+            self.trace_headers.pop(ctx.session.id, None)
+            await self.repo.release_turn(uuid.UUID(ctx.session.id), ctx.state["turn"])
+        logger.warning("Model call failed: %s", type(error).__name__)
         return None
 
     # --------------------------------------------------------------------- prompt
@@ -405,7 +425,11 @@ def build_seller_agent(
         output_schema=SellerTurn,
         output_key="seller_turn",
         generate_content_config=types.GenerateContentConfig(
-            temperature=settings.temperature, max_output_tokens=settings.max_output_tokens
+            temperature=settings.temperature,
+            max_output_tokens=settings.max_output_tokens,
+            # Gemini answers 503 "high demand" / 429 now and then. Retry with backoff, within
+            # the api's 60 s budget: 3 attempts, delays of about 1 s and 2 s.
+            http_options=types.HttpOptions(retry_options=MODEL_RETRY),
         ),
         before_agent_callback=callbacks.before_agent,
         after_agent_callback=callbacks.after_agent,
@@ -413,4 +437,5 @@ def build_seller_agent(
         after_model_callback=callbacks.after_model,
         before_tool_callback=callbacks.before_tool,
         after_tool_callback=callbacks.after_tool,
+        on_model_error_callback=callbacks.on_model_error,
     )

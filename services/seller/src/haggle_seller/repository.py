@@ -71,6 +71,23 @@ class SellerRepository:
                 .returning(Game.turn_count)
             )
 
+    async def release_turn(self, game_id: uuid.UUID, turn: int) -> None:
+        """Give back a reserved turn whose reply never happened (the model call failed).
+
+        Conditional on `turn_count == turn` and an open game, so it can never undo a turn that
+        was completed, nor reopen a deal closed earlier in the same turn.
+        """
+        async with self._sessions() as session, session.begin():
+            await session.execute(
+                update(Game)
+                .where(
+                    Game.id == game_id,
+                    Game.status == GameStatus.OPEN,
+                    Game.turn_count == turn,
+                )
+                .values(turn_count=Game.turn_count - 1)
+            )
+
     async def load_context(self, game_id: uuid.UUID) -> GameContext:
         async with self._sessions() as session:
             row = (await session.execute(_CONTEXT_QUERY, {"game_id": game_id})).mappings().one()

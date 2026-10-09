@@ -339,3 +339,23 @@ async def test_l3_fails_closed_when_the_pricing_tool_is_unavailable(
 
     assert "technical issue" in json.loads(final)["message"]
     assert calls == []
+
+
+async def test_failed_model_call_gives_the_turn_back(
+    play: Any, new_game: NewGame, migrated_engine: Engine
+) -> None:
+    """Gemini sometimes answers 503 "high demand". The error reaches the api (502, "try again"),
+    but the player must not lose a turn to OUR outage."""
+    game = new_game(level=3, turn_count=0)
+
+    def overloaded(request: LlmRequest) -> LlmResponse:
+        raise RuntimeError("503 UNAVAILABLE")
+
+    with pytest.raises(RuntimeError):
+        await play(game, "hello", overloaded)
+    assert sql(migrated_engine, "SELECT turn_count FROM games WHERE id = :g", game)[0][0] == 0
+
+    await play(game, "hello again", lambda r: reply("Hello!"))
+
+    turns = sql(migrated_engine, "SELECT seq FROM turns WHERE game_id = :g ORDER BY seq", game)
+    assert [t.seq for t in turns] == [1, 2]  # the retry is turn 1, with no gap
