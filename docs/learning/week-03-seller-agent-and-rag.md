@@ -143,6 +143,35 @@ id) becomes Langfuse's `sessionId` automatically, so one game = one session in t
 API gotcha: organizations created after 2026-09-16 can't use `GET /api/public/traces` (HTTP 410).
 Use `GET /api/public/v2/observations?fromStartTime=…&toStartTime=…`.
 
+### 5.1 Distributed tracing: one trace across seller and MCP (added after week 3)
+
+Langfuse's **Agent Graph** view (trace detail → graph, *Aggregated* or *Expanded* mode) draws
+typed observations as nodes. To see inside the MCP server too:
+
+| Piece | Where |
+|-------|-------|
+| `traceparent` (W3C Trace Context) captured in `before_tool` and sent as an MCP header | seller `agent.py` |
+| `TraceContextMiddleware` adopts the caller's trace for the whole request | `haggle_mcp/telemetry.py` |
+| Typed observations: `tool`, `evaluator` (policy), `guardrail` (deal validation + seller guards), `retriever` + `embedding` (RAG) | `haggle_core/tracing.py` → `observation()` |
+| Trace tags/metadata (`level-3`, car, prompt version, model) via `langfuse.trace.*` attributes | `tag_current_trace()` |
+| **Never the floor** in any observation: trace storage is one more place a secret can leak | review rule |
+
+Debugging it taught four things worth remembering:
+
+1. **Check what is actually running.** The first "failure" was old server processes still holding
+   the ports. `pkill -f <pattern>` also matched *its own* shell, which explained the odd exit
+   codes. Stop processes by PID and verify the port is free (`ss -ltn`).
+2. **Langfuse drops generic spans by default** (only its own, `gen_ai.*` ones and known LLM
+   instrumentors pass). That's why services create Langfuse observations instead of using
+   generic ASGI/SQLAlchemy instrumentation.
+3. **Read the span's attributes before guessing.** The detached branch came from the **MCP SDK v2's
+   own tracing** (`mcp.method.name`, scope `mcp-python-sdk`). It propagates context in the
+   JSON-RPC `_meta`, and its client-side span was being filtered out. The fix is an export filter
+   that keeps the SDK's `tools/call` spans (`should_export_span`, unit-tested).
+4. **Observability finds performance issues for free.** The full tree showed ADK repeating the
+   MCP handshake (`initialize` + `tools/list`) on **every** tool call. Caching the tool list
+   (`tool_list_cache_ttl_seconds=300`) removes one round trip.
+
 ---
 
 ## 6. Run it yourself

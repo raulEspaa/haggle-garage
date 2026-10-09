@@ -41,6 +41,7 @@ from pydantic import ValidationError
 from haggle_core.contracts import SellerIntent, SellerTurn
 from haggle_core.domain import Level
 from haggle_core.numbers import extract_amounts
+from haggle_core.tracing import inject_trace_headers, observation, tag_current_trace
 from haggle_seller.guards import (
     ReplyContext,
     canary_for,
@@ -94,6 +95,9 @@ class SellerCallbacks:
     def __init__(self, repo: SellerRepository, settings: SellerSettings) -> None:
         self.repo = repo
         self.settings = settings
+        # Trace headers captured in before_tool, per session, read by the MCP header provider.
+        # Not in ctx.state: state writes are a delta that header_provider does not see yet.
+        self.trace_headers: dict[str, dict[str, str]] = {}
 
     # --------------------------------------------------------------------- agent level
     async def before_agent(self, ctx: Context) -> types.Content | None:
@@ -121,8 +125,19 @@ class SellerCallbacks:
             )
 
         game = await self.repo.load_context(game_id)
-        await self.repo.stamp_run_metadata(
-            game_id, self.settings.model_id, load_prompt(game.level)[1]
+        prompt_version = load_prompt(game.level)[1]
+        await self.repo.stamp_run_metadata(game_id, self.settings.model_id, prompt_version)
+        # Filterable in Langfuse: tags + metadata on the whole trace (never the floor).
+        tag_current_trace(
+            tags=[f"level-{game.level}", game.car_id, prompt_version],
+            metadata={
+                "game_id": str(game_id),
+                "level": str(game.level),
+                "car_id": game.car_id,
+                "turn": str(turn),
+                "prompt_version": prompt_version,
+                "model_id": self.settings.model_id,
+            },
         )
 
         buyer_text = _text_of(ctx.user_content)
@@ -144,6 +159,7 @@ class SellerCallbacks:
         if not ctx.state.get("turn_open"):
             return None  # the turn was refused in before_agent: nothing to record
         ctx.state["turn_open"] = False
+        self.trace_headers.pop(ctx.session.id, None)  # bounded: one entry per in-flight turn
         game_id = uuid.UUID(ctx.session.id)
         raw = ctx.state.get("seller_turn")
         seller_turn = raw if isinstance(raw, dict) else json.loads(raw or "{}")
@@ -168,6 +184,8 @@ class SellerCallbacks:
         if level == Level.BLIND and "evaluate_offer" not in llm_request.tools_dict:
             # FAIL CLOSED. If the MCP toolset failed to load, ADK logs an error and runs the agent
             # WITHOUT tools. At L3 that would mean a model inventing prices: refuse instead.
+            with observation("seller.fail_closed", "guardrail") as obs:
+                obs.update(output={"blocked": True, "reason": "pricing_tool_unavailable"})
             ctx.state["guards"] = [*ctx.state.get("guards", []), "pricing_tool_unavailable"]
             return LlmResponse(
                 content=_reply_content(
@@ -220,6 +238,17 @@ class SellerCallbacks:
         Guarding only the first path left L2/L3 unprotected with the real model (found in
         Langfuse traces, week 3). Both paths now call this one function.
         """
+        with observation("seller.output_guard", "guardrail", input=raw_json) as obs:
+            replacement = self._review_reply_inner(ctx, raw_json)
+            obs.update(
+                output={
+                    "violations": ctx.state.get("guards", []),
+                    "replaced": replacement is not None,
+                }
+            )
+            return replacement
+
+    def _review_reply_inner(self, ctx: Context, raw_json: str) -> SellerTurn | None:
         game = ctx.state["game"]
         level = Level(game["level"])
         try:
@@ -252,6 +281,10 @@ class SellerCallbacks:
         self, tool: BaseTool, args: dict[str, Any], ctx: Context
     ) -> dict[str, Any] | None:
         state = ctx.state
+        # Capture the trace context HERE: inside before_tool the current span is the tool span
+        # Langfuse shows in the agent tree. When ADK later calls header_provider, the current
+        # span is an internal one, and the MCP steps showed up as a detached branch.
+        self.trace_headers[ctx.session.id] = inject_trace_headers({})
         if tool.name == "set_model_response":
             # The final answer travelling as a tool call: review it like any other reply and,
             # if a guard fires, rewrite the arguments in place (ADK uses the mutated dict).
@@ -262,9 +295,14 @@ class SellerCallbacks:
             return None
         if tool.name == "evaluate_offer":
             amount = int(args.get("offer_usd") or 0)
-            if not offer_is_grounded(
+            grounded = offer_is_grounded(
                 amount, state["buyer_text"], set(state.get("code_numbers", []))
-            ):
+            )
+            with observation(
+                "seller.offer_grounding", "guardrail", input={"offer_usd": amount}
+            ) as obs:
+                obs.update(output={"allowed": grounded})
+            if not grounded:
                 state["guards"] = [*state["guards"], "ungrounded_offer_evaluation"]
                 return _tool_error(
                     "Only evaluate a price the buyer explicitly offered in their last message, "
@@ -278,9 +316,15 @@ class SellerCallbacks:
                 uuid.uuid5(IDEMPOTENCY_NAMESPACE, f"{ctx.session.id}:{state['turn']}:{price}")
             )
             level = state["game"]["level"]
-            if level != Level.BLIND and not close_is_grounded(
+            grounded = level == Level.BLIND or close_is_grounded(
                 price, state["buyer_text"], state.get("last_quoted")
-            ):
+            )
+            with observation(
+                "seller.close_grounding", "guardrail", input={"price_usd": price}
+            ) as obs:
+                # At L3 the MCP checks the matching accept; at L1/L2 this check is the evidence.
+                obs.update(output={"allowed": grounded, "checked_here": level != Level.BLIND})
+            if not grounded:
                 state["guards"] = [*state["guards"], "ungrounded_close"]
                 return _tool_error("Only close at a price the buyer has explicitly agreed to.")
         return None
@@ -326,7 +370,9 @@ def build_seller_agent(
 
     def mcp_headers(ctx: ReadonlyContext) -> dict[str, str]:
         # ADR-0008: the game id comes from the session (code), never from an LLM argument.
-        return {"X-Haggle-Token": token, "X-Haggle-Game-Id": ctx.session.id}
+        # traceparent: continue THIS trace inside the MCP server (distributed tracing).
+        trace_headers = callbacks.trace_headers.get(ctx.session.id) or inject_trace_headers({})
+        return {"X-Haggle-Token": token, "X-Haggle-Game-Id": ctx.session.id, **trace_headers}
 
     def tools_for_level(tool: BaseTool, readonly_context: ReadonlyContext | None = None) -> bool:
         # evaluate_offer only exists at L3; at L1/L2 the LLM decides concessions (by design).
@@ -351,6 +397,9 @@ def build_seller_agent(
                 ),
                 header_provider=mcp_headers,
                 tool_filter=tools_for_level,
+                # Traces showed a full MCP handshake (initialize + tools/list) on EVERY tool call;
+                # caching the tool list removes the tools/list round trip.
+                tool_list_cache_ttl_seconds=300,
             )
         ],
         output_schema=SellerTurn,

@@ -23,11 +23,13 @@ from starlette.responses import JSONResponse
 from haggle_core.contracts import CloseResultOut, OfferDecisionOut, SheetHitOut, SheetResultsOut
 from haggle_core.db.session import create_engine, create_session_factory
 from haggle_core.settings import get_settings
+from haggle_core.tracing import observation, setup_langfuse
 from haggle_mcp.auth import GAME_HEADER, ClientScope, TokenAuthMiddleware, scope_from_headers
 from haggle_mcp.rag.embeddings import Embedder, GeminiEmbedder
 from haggle_mcp.rag.store import SheetRetriever
 from haggle_mcp.service import GameNotOpenError, NegotiationService
 from haggle_mcp.settings import McpSettings, get_mcp_settings
+from haggle_mcp.telemetry import TraceContextMiddleware
 
 MAX_PRICE_USD = 10_000_000
 
@@ -66,13 +68,18 @@ def build_server(
             raise ToolError("This tool is not available to this client.")
         if retriever is None:
             raise ToolError("Reference search is unavailable right now.")
-        hits = await retriever.search(query, top_k)
-        return SheetResultsOut(
-            results=[
-                SheetHitOut(sheet_slug=h.sheet_slug, section=h.section, text=h.text, score=h.score)
-                for h in hits
-            ]
-        )
+        with observation("mcp.lookup_model_sheet", "tool", input={"query": query}) as obs:
+            hits = await retriever.search(query, top_k)
+            result = SheetResultsOut(
+                results=[
+                    SheetHitOut(
+                        sheet_slug=h.sheet_slug, section=h.section, text=h.text, score=h.score
+                    )
+                    for h in hits
+                ]
+            )
+            obs.update(output=[f"{h.sheet_slug} / {h.section} ({h.score})" for h in hits])
+            return result
 
     @mcp.tool(
         annotations=ToolAnnotations(
@@ -96,10 +103,14 @@ def build_server(
         message that contains a new price. It returns your decision and the only price you may
         quote. Never quote any other price."""
         game_id = require_seller(ctx)
-        try:
-            return await service.evaluate_offer(game_id, offer_usd)
-        except GameNotOpenError:
-            raise ToolError("This negotiation is not open.") from None
+        with observation("mcp.evaluate_offer", "tool", input={"offer_usd": offer_usd}) as obs:
+            try:
+                result = await service.evaluate_offer(game_id, offer_usd)
+            except GameNotOpenError:
+                obs.update(output={"error": "game_not_open"})
+                raise ToolError("This negotiation is not open.") from None
+            obs.update(output=result.model_dump(mode="json"))
+            return result
 
     @mcp.tool(
         annotations=ToolAnnotations(
@@ -120,7 +131,10 @@ def build_server(
         """Finalize the sale at a price the buyer has explicitly agreed to. Call it only after
         the buyer clearly accepts. If it is rejected, do not reveal why: keep negotiating."""
         game_id = require_seller(ctx)
-        return await service.close_deal(game_id, price_usd, idempotency_key)
+        with observation("mcp.close_deal", "tool", input={"price_usd": price_usd}) as obs:
+            result = await service.close_deal(game_id, price_usd, idempotency_key)
+            obs.update(output=result.model_dump(mode="json"))
+            return result
 
     return mcp
 
@@ -131,6 +145,7 @@ def build_app(
     embedder: Embedder | None = None,
 ) -> Starlette:
     settings = settings or get_mcp_settings()
+    setup_langfuse()  # no-op without LANGFUSE_* keys
     sessions = create_session_factory(create_engine(database_url))
     if embedder is None and os.environ.get("GOOGLE_API_KEY"):
         embedder = GeminiEmbedder()
@@ -154,6 +169,7 @@ def build_app(
 
     app.add_route("/health", health, methods=["GET"])
     app.add_middleware(TokenAuthMiddleware, settings=settings)
+    app.add_middleware(TraceContextMiddleware)  # outermost: adopt the caller's trace first
     return app
 
 

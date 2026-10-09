@@ -15,10 +15,11 @@ def setup_tracing() -> bool:
     if not (os.environ.get("LANGFUSE_PUBLIC_KEY") and os.environ.get("LANGFUSE_SECRET_KEY")):
         log.info("Langfuse keys not set: tracing disabled")
         return False
-    from langfuse import get_client
     from openinference.instrumentation.google_adk import GoogleADKInstrumentor
 
-    get_client()  # initialises the exporter from LANGFUSE_* env vars
+    from haggle_core.tracing import setup_langfuse
+
+    setup_langfuse()  # exporter from LANGFUSE_* env vars + enables our typed observations
     GoogleADKInstrumentor().instrument()
     log.info("Langfuse tracing enabled")
     return True

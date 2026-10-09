@@ -11,6 +11,7 @@ from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from haggle_core.db.models import Car, ModelSheet, SheetChunk
+from haggle_core.tracing import observation
 from haggle_mcp.rag.embeddings import Embedder
 from haggle_mcp.rag.sheets import Sheet
 
@@ -89,7 +90,16 @@ class SheetRetriever:
         self._embedder = embedder
 
     async def search(self, query: str, top_k: int) -> list[SearchHit]:
-        return await search(self._sessions, await self._embedder.embed_query(query), top_k)
+        with observation("rag.search", "retriever", input={"query": query, "top_k": top_k}) as obs:
+            with observation("rag.embed_query", "embedding", input=query):
+                vector = await self._embedder.embed_query(query)
+            hits = await search(self._sessions, vector, top_k)
+            obs.update(
+                output=[
+                    {"sheet": h.sheet_slug, "section": h.section, "score": h.score} for h in hits
+                ]
+            )
+            return hits
 
 
 async def search(

@@ -17,6 +17,7 @@ from haggle_core.contracts import CloseRejection, CloseResultOut, OfferDecisionO
 from haggle_core.db.models import Deal, Game, NegotiationEvent, PricingPolicy
 from haggle_core.domain import CloseOutcome, Decision, EventKind, GameStatus, Level
 from haggle_core.policy import PolicyParams, decide, is_final_offer
+from haggle_core.tracing import observation
 
 
 class GameNotOpenError(Exception):
@@ -71,7 +72,18 @@ class NegotiationService:
                 .order_by(NegotiationEvent.id.desc())
                 .limit(1)
             )
-            result = decide(params, turn, offer_usd, last_counter or game.list_price_usd)
+            with observation(
+                "policy.decide", "evaluator", input={"turn": turn, "offer_usd": offer_usd}
+            ) as obs:
+                result = decide(params, turn, offer_usd, last_counter or game.list_price_usd)
+                # No floor and no margin in traces: trace storage must not become a leak.
+                obs.update(
+                    output={
+                        "decision": result.decision,
+                        "counter_usd": result.counter_usd,
+                        "reason": result.reason,
+                    }
+                )
 
             session.add(
                 NegotiationEvent(
@@ -110,9 +122,13 @@ class NegotiationService:
             except GameNotOpenError:
                 return CloseResultOut(status="rejected", reason=CloseRejection.GAME_NOT_OPEN)
 
-            internal_reason = await self._close_blocker(session, game, price_usd)
-            if replay is not None:
-                internal_reason = "idempotency_key_reused_for_another_game"
+            with observation(
+                "deal.validate", "guardrail", input={"price_usd": price_usd, "level": game.level}
+            ) as obs:
+                internal_reason = await self._close_blocker(session, game, price_usd)
+                if replay is not None:
+                    internal_reason = "idempotency_key_reused_for_another_game"
+                obs.update(output={"allowed": internal_reason is None, "reason": internal_reason})
 
             if internal_reason is not None:
                 session.add(

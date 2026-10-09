@@ -23,6 +23,7 @@ _CONTEXT_QUERY = text("SELECT * FROM seller_game_context WHERE game_id = :game_i
 @dataclass(frozen=True, slots=True)
 class GameContext:
     game_id: str
+    car_id: str
     level: int
     status: str
     turn_count: int
@@ -77,6 +78,7 @@ class SellerRepository:
         trim = f" {row['trim']}" if row["trim"] else ""
         return GameContext(
             game_id=str(game_id),
+            car_id=row["car_id"],
             level=row["level"],
             status=row["status"],
             turn_count=row["turn_count"],
