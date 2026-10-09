@@ -19,6 +19,8 @@ members = ["packages/*", "services/*"]
 [tool.uv.sources]
 haggle-core = { workspace = true }
 haggle-api = { workspace = true }
+haggle-mcp = { workspace = true }
+haggle-seller = { workspace = true }
 
 # ---------------------------------------------------------------- ruff
 [tool.ruff]
@@ -33,11 +35,12 @@ select = ["E", "F", "I", "B", "UP", "S", "ASYNC", "PT", "SIM", "RUF"]
 
 [tool.ruff.lint.isort]
 # Our own packages go in their own import block, after third-party libraries.
-known-first-party = ["haggle_core", "haggle_api"]
+known-first-party = ["haggle_core", "haggle_api", "haggle_mcp", "haggle_seller"]
 
 [tool.ruff.lint.per-file-ignores]
-"**/tests/**" = ["S101"] # `assert` is how pytest works
+"**/tests/**" = ["S101", "S311"] # pytest asserts; seeded PRNGs are intended in tests
 "conftest.py" = ["S101"]
+"spikes/**" = ["E501", "S101", "T201", "ASYNC110"] # throwaway experiments, kept for the record
 
 # ---------------------------------------------------------------- mypy
 [tool.mypy]
@@ -57,6 +60,7 @@ testpaths = ["packages", "services"]
 addopts = "-ra --strict-markers --import-mode=importlib"
 asyncio_mode = "auto"
 asyncio_default_fixture_loop_scope = "session"
+asyncio_default_test_loop_scope = "session" # tests and fixtures share ONE event loop
 markers = [
   "db: needs a running Postgres (make db-up). Skipped when unreachable unless HAGGLE_REQUIRE_DB=1.",
   "llm: calls a real LLM. Never runs in CI.",
@@ -67,6 +71,8 @@ dev = [
     "alembic>=1.20.0",
     "haggle-api",
     "haggle-core",
+    "haggle-mcp",
+    "haggle-seller",
     "httpx2>=2.13.1",
     "hypothesis>=6.168.5",
     "mypy>=2.4.0",

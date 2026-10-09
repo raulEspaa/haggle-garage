@@ -1,16 +1,20 @@
 [project]
-name = "haggle-api"
+name = "haggle-mcp"
 version = "0.1.0"
-description = "Public HTTP API and web page for Haggle Garage."
+description = "MCP server: negotiation policy engine, deal validation and RAG over model sheets."
+authors = [
+    { name = "uo278036", email = "uo278036@uniovi.es" }
+]
 requires-python = ">=3.13,<3.14"
 dependencies = [
-    "fastapi>=0.115",
     "haggle-core",
+    "mcp>=2.3",
+    "starlette>=1.7.0",
     "uvicorn[standard]>=0.54.0",
 ]
 
 [project.scripts]
-haggle-api = "haggle_api.main:run"
+haggle-mcp = "haggle_mcp.server:run"
 
 [build-system]
 requires = ["uv_build>=0.12.23,<0.13.0"]
