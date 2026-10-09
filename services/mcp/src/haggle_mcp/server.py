@@ -14,6 +14,7 @@ from dotenv import load_dotenv
 from mcp.server import MCPServer
 from mcp.server.mcpserver import Context
 from mcp.server.mcpserver.exceptions import ToolError
+from mcp.server.transport_security import TransportSecuritySettings
 from mcp.types import ToolAnnotations
 from pydantic import Field
 from starlette.applications import Starlette
@@ -154,7 +155,15 @@ def build_app(
 
     # Stateless + JSON responses: matches the 2026-07-28 spec (no protocol sessions), so any
     # instance (home or Cloud Run) can answer any request. All game state lives in Postgres.
-    app = mcp.streamable_http_app(stateless_http=True, json_response=True)
+    # Host checking stays on (it blocks DNS rebinding from a browser); the list is explicit
+    # because the SDK's default only knows localhost, so in compose "mcp:8100" got a 421.
+    app = mcp.streamable_http_app(
+        stateless_http=True,
+        json_response=True,
+        transport_security=TransportSecuritySettings(
+            enable_dns_rebinding_protection=True, allowed_hosts=settings.allowed_hosts
+        ),
+    )
 
     async def health(_: Request) -> JSONResponse:
         # Not "/healthz": Cloud Run reserves some paths ending in "z" (see week 1 journal).

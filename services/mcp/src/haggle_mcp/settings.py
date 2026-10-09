@@ -15,6 +15,9 @@ class McpSettings(BaseSettings):
     seller_token: SecretStr
     catalog_token: SecretStr
     backend: Literal["home", "cloud", "local"] = "local"
+    # DNS-rebinding protection: Host headers this server answers ("name:port", "*" = any port).
+    # Add the service's real name where it runs: "mcp:*" in compose, the Cloud Run host in prod.
+    allowed_hosts: list[str] = ["127.0.0.1:*", "localhost:*", "[::1]:*"]
 
 
 @lru_cache

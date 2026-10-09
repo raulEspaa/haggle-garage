@@ -41,6 +41,21 @@ def test_mcp_endpoint_rejects_unknown_tokens() -> None:
     assert response.status_code == 401
 
 
+def test_unknown_host_header_is_rejected_even_with_a_valid_token() -> None:
+    # DNS rebinding: a web page on evil.example resolving to our IP must not reach the tools.
+    settings = SETTINGS.model_copy(update={"allowed_hosts": ["mcp:*"]})
+    request = {"jsonrpc": "2.0", "id": 1, "method": "tools/list"}
+    token = {"X-Haggle-Token": "seller-test-token"}
+
+    with TestClient(build_app(settings, UNUSED_DB), base_url="http://evil.example") as client:
+        rejected = client.post("/mcp", json=request, headers=token)
+    with TestClient(build_app(settings, UNUSED_DB), base_url="http://mcp:8100") as client:
+        accepted = client.post("/mcp", json=request, headers=token)
+
+    assert rejected.status_code == 421
+    assert accepted.status_code != 421
+
+
 def test_health_is_public_and_reports_the_backend() -> None:
     with TestClient(build_app(SETTINGS, UNUSED_DB)) as client:
         body = client.get("/health").json()
