@@ -8,10 +8,10 @@
 
 | Done when… | Status |
 |------------|--------|
-| CI blocks a PR with a failing test | ✅ workflow written. Needs your GitHub repo to run (§11) |
-| `alembic upgrade head` + seed works | ✅ verified against Postgres 16 + pgvector (§4, §5) |
-| `terraform destroy && apply` recreates the service | ⏳ code validated (`terraform validate`). Needs your GCP project (§11) |
-| A test budget alert email arrived | ⏳ your turn (§11) |
+| CI blocks a PR with a failing test | ✅ CI green on `main` (38 s). Exercise 3 (§13) proves the blocking |
+| `alembic upgrade head` + seed works | ✅ verified against Docker `pgvector/pgvector:pg17`: 27 tests pass |
+| Terraform recreates the service | ✅ deployed, `/health` public, `plan` = no changes. Targeted destroy/apply left as an exercise (§12.3) |
+| A test budget alert email arrived | ⏳ create the budget in the console (§12.2) |
 
 ---
 
@@ -433,8 +433,13 @@ docker tag haggle-api:$SHA $REPO/api:$SHA && docker push $REPO/api:$SHA
 cd infra/terraform && terraform apply -var="api_image=$REPO/api:$SHA"
 curl "$(terraform output -raw api_url)/health"     # {"status":"ok","service":"api","version":"<sha>"}
 
-# Definition of done: prove the stack is reproducible
-terraform destroy && terraform apply -var="api_image=$REPO/api:$SHA"
+# Definition of done: prove the SERVICE is reproducible from code.
+# Don't run a full `terraform destroy`: it also deletes Artifact Registry WITH the images,
+# and the next apply would fail because the image no longer exists.
+terraform destroy -target=google_cloud_run_v2_service_iam_member.api_public \
+                  -target=google_cloud_run_v2_service.api -var="api_image=$REPO/api:$SHA"
+terraform apply -var="api_image=$REPO/api:$SHA"     # recreated: new URL hash is possible
+terraform plan  -var="api_image=$REPO/api:$SHA"     # "No changes" = state matches reality
 ```
 
 ### 12.4 Commit and push

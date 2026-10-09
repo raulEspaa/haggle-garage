@@ -24,7 +24,7 @@ Budget: **~73 h planned** of the 64–80 h available. Planned hours stay below t
 | Terraform bootstrap: GCS state bucket, Artifact Registry (cleanup policy), Cloud Run "hello" (`/health`) | 2.5 |
 
 - **Deliverable:** green CI. `docker compose up db` + `alembic upgrade head` + seed works. A public `…run.app/health` created by `terraform apply`.
-- **Done when:** a PR with a failing test is blocked by CI, `terraform destroy && terraform apply` recreates the service, and a test budget alert email has arrived.
+- **Done when:** a PR with a failing test is blocked by CI, a targeted `terraform destroy` + `apply` recreates the Cloud Run service, and a test budget alert email has arrived.
 - **You learn:** uv/pyproject (≈ .sln/.csproj), ruff, pytest (≈ xUnit), async SQLAlchemy (≈ EF Core), Alembic (≈ EF migrations), Terraform basics, Cloud Run.
 - *If Terraform eats more than 3 h: deploy hello-world with `gcloud run deploy` and move Terraform to Week 7.*
 
