@@ -56,4 +56,5 @@ USER app
 EXPOSE 8080
 
 # Cloud Run sends traffic to $PORT. Inside a container we must listen on all interfaces.
-CMD ["sh", "-c", "exec uvicorn haggle_api.main:app --host 0.0.0.0 --port ${PORT}"]
+# --factory: uvicorn calls create_app() (no module-level app object, see main.py).
+CMD ["sh", "-c", "exec uvicorn --factory haggle_api.main:create_app --host 0.0.0.0 --port ${PORT}"]

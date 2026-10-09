@@ -1,0 +1,95 @@
+:root {
+  --bg: #f6f4ef;
+  --surface: #ffffff;
+  --text: #1d1d1b;
+  --muted: #6b6a66;
+  --accent: #b5371f;
+  --accent-text: #ffffff;
+  --border: #e2ded4;
+  --me: #e9eef6;
+  --sam: #f3ece3;
+  --error: #b00020;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #151514;
+    --surface: #1f1f1d;
+    --text: #ecebe7;
+    --muted: #a3a29c;
+    --accent: #e0643f;
+    --accent-text: #151514;
+    --border: #34332f;
+    --me: #24303f;
+    --sam: #352b22;
+    --error: #ff6b81;
+  }
+}
+
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  font: 16px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif;
+  background: var(--bg);
+  color: var(--text);
+}
+a { color: var(--accent); }
+main { max-width: 860px; margin: 0 auto; padding: 0 16px 32px; }
+
+.site-header, .site-footer {
+  max-width: 860px; margin: 0 auto; padding: 16px;
+  display: flex; justify-content: space-between; gap: 16px; align-items: center;
+}
+.site-footer { color: var(--muted); font-size: 0.85rem; display: block; text-align: center; }
+.brand { font-weight: 800; text-decoration: none; color: var(--text); letter-spacing: -0.02em; }
+
+.intro h1 { font-size: clamp(1.5rem, 4vw, 2.1rem); line-height: 1.2; margin: 8px 0; }
+.intro p { color: var(--muted); }
+
+.panel {
+  background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
+  padding: 20px; margin-top: 16px;
+}
+h2 { font-size: 1.1rem; margin: 0 0 12px; }
+
+.cars, .levels { display: grid; gap: 10px; margin-bottom: 20px; }
+.car, .level {
+  display: grid; gap: 2px; padding: 12px 12px 12px 40px; position: relative;
+  border: 1px solid var(--border); border-radius: 10px; cursor: pointer;
+}
+.car input, .level input { position: absolute; left: 14px; top: 16px; }
+.car:has(input:checked), .level:has(input:checked) { border-color: var(--accent); }
+.car-title, .level-name { font-weight: 700; }
+.car-meta, .car-desc, .level-summary { color: var(--muted); font-size: 0.9rem; }
+.car-price { font-weight: 700; color: var(--accent); }
+
+button {
+  font: inherit; border-radius: 8px; padding: 10px 16px; cursor: pointer;
+  border: 1px solid var(--border); background: var(--surface); color: var(--text);
+}
+button.primary { background: var(--accent); color: var(--accent-text); border-color: var(--accent); font-weight: 700; }
+button.ghost { background: transparent; }
+button:disabled { opacity: 0.6; cursor: wait; }
+
+.game-bar { display: flex; flex-wrap: wrap; gap: 8px 16px; font-size: 0.9rem; color: var(--muted); margin-bottom: 12px; }
+#game-car { font-weight: 700; color: var(--text); }
+
+.chat {
+  display: flex; flex-direction: column; gap: 10px;
+  max-height: 55vh; overflow-y: auto; padding: 4px; margin-bottom: 12px;
+}
+.bubble { max-width: 85%; padding: 10px 12px; border-radius: 12px; }
+.bubble p { margin: 2px 0 0; white-space: pre-wrap; overflow-wrap: anywhere; }
+.bubble .who { font-size: 0.75rem; font-weight: 700; color: var(--muted); }
+.bubble small { display: block; color: var(--muted); font-size: 0.75rem; margin-top: 4px; }
+.bubble.me { align-self: flex-end; background: var(--me); }
+.bubble.sam { align-self: flex-start; background: var(--sam); }
+
+.composer { display: flex; gap: 8px; }
+input { font: inherit; padding: 10px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg); color: var(--text); }
+.composer input { flex: 1; min-width: 0; }
+.actions { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 12px; margin-top: 16px; align-items: center; }
+.guess { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; font-size: 0.9rem; }
+.guess input { width: 120px; }
+
+.error { color: var(--error); min-height: 1.5em; margin: 8px 0 0; }
+.prose li { margin-bottom: 6px; }

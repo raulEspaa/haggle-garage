@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block title %}How it works · Haggle Garage{% endblock %}
+{% block content %}
+<article class="panel prose">
+  <h1>How it works</h1>
+  <p>Haggle Garage is a portfolio project about building and attacking LLM agents. The dealer,
+     Sam, is an AI agent (Google ADK + Gemini). Every game gets its own secret minimum price.</p>
+  <ul>
+    <li><strong>Level 1, Naive:</strong> the minimum is written in Sam's instructions.</li>
+    <li><strong>Level 2, Hardened:</strong> same secret, plus defensive rules and an output filter in code.</li>
+    <li><strong>Level 3, Blind:</strong> Sam never sees the minimum; a pricing engine in code decides every counteroffer.</li>
+  </ul>
+  <p>At every level, code refuses any sale below the minimum. The model talks, code decides.</p>
+  <p>Source code and evaluation results: see the GitHub repository linked from the author's profile.</p>
+
+  <h2 id="privacy">Privacy</h2>
+  <p>We store what you type in a game (to show the transcript and evaluate the agent) for up to
+     30 days. Your IP address is never stored: only a salted hash that changes every day, used for
+     rate limiting. There are no accounts and no cookies. Please do not type personal data.</p>
+  <p>All cars are real models described with public facts, but every listing, history and price
+     is fictional. Not affiliated with any manufacturer.</p>
+</article>
+{% endblock %}

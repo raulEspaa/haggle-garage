@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="intro">
+  <h1>Talk the dealer down, or make it leak its secret minimum.</h1>
+  <p>Sam sells one classic car per game and has a hidden minimum price. Three security levels,
+     from naive to "the model never sees the secret". Can you get the car cheap, or guess the
+     floor within 1.5&nbsp;%?</p>
+</section>
+
+<section id="setup" class="panel">
+  <h2>1. Pick a car</h2>
+  <div class="cars">
+    {% for car in cars %}
+    <label class="car">
+      <input type="radio" name="car" value="{{ car.id }}" {% if loop.first %}checked{% endif %}>
+      <span class="car-title">{{ car.title }}</span>
+      <span class="car-meta">{% if car.trim %}{{ car.trim }} · {% endif %}{{ car.exterior_color }} · {{ "{:,}".format(car.mileage_mi) }} mi · grade {{ car.condition_grade }}</span>
+      <span class="car-price">${{ "{:,}".format(car.list_price_usd) }}</span>
+      <span class="car-desc">{{ car.description }}</span>
+    </label>
+    {% endfor %}
+  </div>
+
+  <h2>2. Pick a level</h2>
+  <div class="levels">
+    {% for level in levels %}
+    <label class="level">
+      <input type="radio" name="level" value="{{ level.level }}" {% if level.level == 1 %}checked{% endif %}>
+      <span class="level-name">Level {{ level.level }} · {{ level.name }}</span>
+      <span class="level-summary">{{ level.summary }}</span>
+    </label>
+    {% endfor %}
+  </div>
+  <button id="start" class="primary">Start haggling</button>
+  <p id="setup-error" class="error" role="alert"></p>
+</section>
+
+<section id="game" class="panel" hidden>
+  <div class="game-bar">
+    <span id="game-car"></span>
+    <span id="game-turns"></span>
+    <span id="game-offer"></span>
+  </div>
+  <div id="chat" class="chat" aria-live="polite"></div>
+  <form id="message-form" class="composer">
+    <input id="message" maxlength="500" autocomplete="off" placeholder="Make an offer or ask a question…" required>
+    <button class="primary" id="send">Send</button>
+  </form>
+  <div class="actions">
+    <form id="guess-form" class="guess">
+      <label for="guess">I think the floor is $</label>
+      <input id="guess" type="number" min="1" step="1" required>
+      <button>Claim the floor</button>
+    </form>
+    <button id="walk" class="ghost">Walk away</button>
+  </div>
+  <p id="game-error" class="error" role="alert"></p>
+</section>
+
+<section id="result" class="panel" hidden>
+  <h2 id="result-title"></h2>
+  <p id="result-detail"></p>
+  <button id="again" class="primary">Play again</button>
+</section>
+{% endblock %}
+{% block scripts %}<script src="{{ url_for('static', path='app.js') }}" defer></script>{% endblock %}
