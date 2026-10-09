@@ -4,7 +4,7 @@ Negotiate with an AI used-car dealer, or make it leak its secret minimum price.
 A portfolio project about agents (Google ADK, LangGraph), protocols (MCP, A2A), RAG, evals and
 LLM security, deployed on Cloud Run.
 
-> **Status:** Week 3 of 8. The seller agent negotiates over A2A at three security levels (`make play`).
+> **Status:** Week 4 of 8. The full game runs locally in the browser: web page → API → seller (A2A) → MCP.
 
 ## Quickstart (local)
 
@@ -16,7 +16,8 @@ make db-up              # Postgres 17 + pgvector in Docker
 cp .env.example .env
 make migrate seed       # schema + 3 iconic cars (Camaro Z/28, Challenger R/T, Grand National)
 make check              # lint, types, tests
-make api                # http://127.0.0.1:8080/health
+make ingest             # embed the model sheets (needs GOOGLE_API_KEY in .env)
+docker compose up --build   # mcp + seller + api: play at http://127.0.0.1:8080
 ```
 
 ## Repository map
@@ -24,7 +25,7 @@ make api                # http://127.0.0.1:8080/health
 | Path | What |
 |------|------|
 | `packages/core` | Shared settings, domain enums, DB models, seed loader |
-| `services/api` | FastAPI public API (health endpoint only, for now) |
+| `services/api` | FastAPI public API and web page: games, demo limits, strict CSP |
 | `services/mcp` | MCP server: `evaluate_offer`, `close_deal` (policy engine + deal validation) |
 | `services/seller` | ADK seller agent exposed over A2A, guards as callbacks, terminal game (`make play`) |
 | `spikes/` | Throwaway experiments that de-risked the design (`make spike`) |

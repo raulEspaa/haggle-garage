@@ -316,7 +316,7 @@ Base path `/api`. JSON. Errors use **RFC 9457 Problem Details** (`application/pr
   "game_id": "8d2f0b7e-0c1a-4e53-9b0e-6f1d2a3b4c5d",
   "game_token": "opaque-random-43-chars",
   "level": 3,
-  "car": { "id": "dodge-challenger-rt-1970", "title": "1970 Dodge Challenger R/T", "list_price_usd": 104900 },
+  "car": { "id": "dodge-challenger-rt-1970", "title": "1970 Dodge Challenger R/T", "list_price_usd": 104900, "...": "full CarOut" },
   "turn_cap": 12,
   "expires_at": "2026-10-08T17:32:00Z",
   "seller_message": "Templated greeting (no LLM call)."
@@ -332,9 +332,11 @@ Base path `/api`. JSON. Errors use **RFC 9457 Problem Details** (`application/pr
 {
   "turn": 4, "turns_left": 8,
   "seller_message": "I can do 31,500 — she's a numbers-matching car.",
+  "intent": "counter",
   "offer_on_table_usd": 31500,
   "status": "open",
-  "deal": null
+  "deal": null,
+  "floor_usd": null
 }
 ```
 
