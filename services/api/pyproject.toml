@@ -1,0 +1,20 @@
+[project]
+name = "haggle-api"
+version = "0.1.0"
+description = "Public HTTP API and web page for Haggle Garage."
+requires-python = ">=3.13,<3.14"
+dependencies = [
+    "fastapi>=0.143.0",
+    "haggle-core",
+    "uvicorn[standard]>=0.54.0",
+]
+
+[project.scripts]
+haggle-api = "haggle_api.main:run"
+
+[build-system]
+requires = ["uv_build>=0.12.23,<0.13.0"]
+build-backend = "uv_build"
+
+[tool.uv.sources]
+haggle-core = { workspace = true }

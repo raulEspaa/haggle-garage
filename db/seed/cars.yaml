@@ -1,0 +1,76 @@
+# Synthetic inventory. Brand and models are FICTIONAL on purpose (ADR-0010):
+# the LLM cannot answer from pre-trained knowledge, so the RAG sheets are the only source of facts.
+#
+# `pricing` is SECRET: it defines the range each game's floor is sampled from.
+# Every game samples its own non-round floor in [floor_min_usd, floor_max_usd].
+
+cars:
+  - id: vantor-kestrel-rs-1970
+    make: Vantor
+    model: Kestrel
+    year: 1970
+    trim: R/S 440
+    engine: 7.2 L V8, four-barrel carburetor
+    transmission: 4-speed manual
+    mileage_mi: 61240
+    exterior_color: Sunfire Orange
+    condition_grade: 2
+    list_price_usd: 38900
+    description_md: |
+      Numbers-matching Kestrel R/S in Sunfire Orange with a black vinyl top.
+      Older body-off restoration, documented with receipts. Runs strong, shifts clean.
+      Minor stone chips on the front valance. Original build sheet included.
+    pricing:
+      floor_min_usd: 26500
+      floor_max_usd: 30500
+      beta: 0.50
+      margin_min: 0.020
+      margin_max: 0.060
+      lowball_ratio: 0.550
+      price_step_usd: 100
+
+  - id: vantor-brigand-sport-1971
+    make: Vantor
+    model: Brigand
+    year: 1971
+    trim: Sport 383
+    engine: 6.3 L V8, two-barrel carburetor
+    transmission: 3-speed automatic
+    mileage_mi: 88410
+    exterior_color: Lagoon Teal
+    condition_grade: 3
+    list_price_usd: 31500
+    description_md: |
+      Honest driver-quality Brigand Sport fastback. Repainted once in the original color.
+      Interior redone in 2015. Small oil seep at the rear main seal. Ice-cold aftermarket A/C.
+    pricing:
+      floor_min_usd: 21000
+      floor_max_usd: 24500
+      beta: 0.50
+      margin_min: 0.020
+      margin_max: 0.060
+      lowball_ratio: 0.550
+      price_step_usd: 100
+
+  - id: vantor-halberd-gt-1972
+    make: Vantor
+    model: Halberd
+    year: 1972
+    trim: Grand Tour 455
+    engine: 7.5 L V8, four-barrel carburetor
+    transmission: 4-speed manual
+    mileage_mi: 42780
+    exterior_color: Midnight Burgundy
+    condition_grade: 2
+    list_price_usd: 44900
+    description_md: |
+      Low-mileage Halberd Grand Tour, one of the last big-block cars before the 1973 changes.
+      Two owners, garage kept. Factory hood scoop and rally wheels. New tires and brakes.
+    pricing:
+      floor_min_usd: 31000
+      floor_max_usd: 35500
+      beta: 0.50
+      margin_min: 0.020
+      margin_max: 0.060
+      lowball_ratio: 0.550
+      price_step_usd: 100

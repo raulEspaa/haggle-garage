@@ -1,0 +1,79 @@
+# Workspace root. This is NOT a deployable package (package = false):
+# it only ties the members together and holds dev tooling + tool config.
+# Think of it as the .sln file of a .NET solution.
+
+[project]
+name = "haggle-garage"
+version = "0.1.0"
+description = "Haggle Garage: negotiate with an AI car dealer. Workspace root."
+readme = "README.md"
+requires-python = ">=3.13,<3.14"
+dependencies = []
+
+[tool.uv]
+package = false
+
+[tool.uv.workspace]
+members = ["packages/*", "services/*"]
+
+[tool.uv.sources]
+haggle-core = { workspace = true }
+haggle-api = { workspace = true }
+
+# ---------------------------------------------------------------- ruff
+[tool.ruff]
+line-length = 100
+target-version = "py313"
+
+[tool.ruff.lint]
+# E/F: pycodestyle + pyflakes   I: import sorting      B: bugbear (likely bugs)
+# UP: modern syntax             S: bandit (security)   ASYNC: blocking calls in async code
+# PT: pytest style              SIM: simplifications   RUF: ruff-specific
+select = ["E", "F", "I", "B", "UP", "S", "ASYNC", "PT", "SIM", "RUF"]
+
+[tool.ruff.lint.isort]
+# Our own packages go in their own import block, after third-party libraries.
+known-first-party = ["haggle_core", "haggle_api"]
+
+[tool.ruff.lint.per-file-ignores]
+"**/tests/**" = ["S101"] # `assert` is how pytest works
+"conftest.py" = ["S101"]
+
+# ---------------------------------------------------------------- mypy
+[tool.mypy]
+python_version = "3.13"
+strict = true
+plugins = ["pydantic.mypy"]
+files = ["packages", "services", "db/migrations"]
+exclude = ["/tests/"]
+
+[[tool.mypy.overrides]]
+module = ["pgvector.*"]
+ignore_missing_imports = true
+
+# ---------------------------------------------------------------- pytest
+[tool.pytest.ini_options]
+testpaths = ["packages", "services"]
+addopts = "-ra --strict-markers --import-mode=importlib"
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "session"
+markers = [
+  "db: needs a running Postgres (make db-up). Skipped when unreachable unless HAGGLE_REQUIRE_DB=1.",
+  "llm: calls a real LLM. Never runs in CI.",
+]
+
+[dependency-groups]
+dev = [
+    "alembic>=1.20.0",
+    "haggle-api",
+    "haggle-core",
+    "httpx2>=2.13.1",
+    "hypothesis>=6.168.5",
+    "mypy>=2.4.0",
+    "pre-commit>=4.6.2",
+    "pytest>=9.1.1",
+    "pytest-asyncio>=1.4.0",
+    "pytest-cov>=7.1.0",
+    "ruff>=0.16.10",
+    "types-pyyaml>=6.0.12.20260906",
+]

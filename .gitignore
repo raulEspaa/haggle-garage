@@ -1,0 +1,41 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+dist/
+build/
+*.egg-info/
+
+# Tool caches and reports
+.mypy_cache/
+.ruff_cache/
+.pytest_cache/
+.hypothesis/
+.coverage
+coverage.xml
+htmlcov/
+
+# Secrets and local config
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+credentials*.json
+
+# Terraform (commit .terraform.lock.hcl, never state or local plugin dirs)
+infra/terraform/.terraform/
+*.tfstate
+*.tfstate.*
+*.tfplan
+crash.log
+infra/terraform/terraform.tfvars
+
+# Personal Claude Code permissions (shared settings would go in .claude/settings.json)
+.claude/settings.local.json
+
+# Editors / OS
+.idea/
+.vscode/
+.directory
+.DS_Store

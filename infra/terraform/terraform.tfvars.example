@@ -1,0 +1,4 @@
+# Copy to terraform.tfvars and fill in your project id. terraform.tfvars is gitignored:
+# it holds no secrets, but your project id is personal and stays out of the public repo.
+project_id = "haggle-prod-123456"
+region     = "europe-west1"

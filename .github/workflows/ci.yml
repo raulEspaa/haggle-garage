@@ -1,0 +1,94 @@
+# Continuous integration: every pull request and every push to main must pass this.
+# No cloud credentials and no LLM keys live here on purpose (docs/07-threat-model.md T24).
+name: ci
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+# Least privilege for the GITHUB_TOKEN: read the code, nothing else.
+permissions:
+  contents: read
+
+# A newer push to the same branch cancels the older, now pointless, run.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  python:
+    name: lint, types, tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    # A real Postgres + pgvector for the `db` tests, same image as docker compose.
+    services:
+      postgres:
+        image: pgvector/pgvector:pg17
+        env:
+          POSTGRES_USER: haggle
+          POSTGRES_PASSWORD: haggle
+          POSTGRES_DB: haggle_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U haggle -d haggle_test"
+          --health-interval 2s
+          --health-timeout 5s
+          --health-retries 30
+
+    env:
+      HAGGLE_REQUIRE_DB: "1" # in CI a missing database is an error, not a skip
+      HAGGLE_TEST_DATABASE_URL: postgresql+psycopg://haggle:haggle@localhost:5432/haggle_test
+
+    steps:
+      # Third-party actions are pinned to a commit SHA, not a movable tag.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
+
+      - name: Install dependencies (fails if uv.lock is out of date)
+        run: uv sync --locked
+
+      - name: Lint
+        run: |
+          uv run ruff check .
+          uv run ruff format --check .
+
+      - name: Type check
+        run: uv run mypy
+
+      - name: Tests
+        run: uv run pytest --cov=haggle_core --cov=haggle_api --cov-report=term-missing
+
+  secrets:
+    name: secret scan (full history)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0 # every commit, not just the last one
+          persist-credentials: false
+      - uses: gitleaks/gitleaks-action@e0c47f4f8be36e29cdc102c57e68cb5cbf0e8d1e # v3.0.0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # no license needed for personal accounts
+
+  terraform:
+    name: terraform fmt + validate
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: infra/terraform
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: hashicorp/setup-terraform@dfe3c3f87815947d99a8997f908cb6525fc44e9e # v4.0.1
+      - run: terraform fmt -check -recursive
+      - run: terraform init -backend=false -input=false
+      - run: terraform validate

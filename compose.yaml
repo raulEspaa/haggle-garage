@@ -1,0 +1,39 @@
+# Local development stack. Services are added here as they are built (mcp, seller...).
+#   make db-up        start only Postgres
+#   docker compose up --build api
+name: haggle
+
+services:
+  db:
+    # Same Postgres major version as Neon, with the pgvector extension preinstalled.
+    image: pgvector/pgvector:pg17
+    environment:
+      POSTGRES_USER: haggle
+      POSTGRES_PASSWORD: haggle # local-only credential, never used outside this machine
+      POSTGRES_DB: haggle
+    ports:
+      - "127.0.0.1:5432:5432" # bind to localhost only: not reachable from your LAN
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./db/init:/docker-entrypoint-initdb.d:ro # creates haggle_test on first start
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U haggle -d haggle"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+
+  api:
+    build:
+      context: .
+      dockerfile: services/api/Dockerfile
+    environment:
+      HAGGLE_ENV: local
+      HAGGLE_DATABASE_URL: postgresql+psycopg://haggle:haggle@db:5432/haggle
+    ports:
+      - "127.0.0.1:8080:8080"
+    depends_on:
+      db:
+        condition: service_healthy
+
+volumes:
+  pgdata:
