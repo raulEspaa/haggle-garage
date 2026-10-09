@@ -1,6 +1,6 @@
 # ADR-0008: Trusted context via headers, never LLM-filled tool arguments
 
-- **Status:** Proposed. Confirm after spike S3.
+- **Status:** Accepted (2026-10-09, after spike S3; implemented in `services/mcp`).
 - **Date:** 2026-10-08
 
 ## Context
@@ -26,9 +26,22 @@ The MCP 2026-07-28 spec removed protocol sessions and suggests "explicit, server
 
 Identity and authorization are **trusted context**. Trusted context must come from code, not from a text generator that reads attacker input. This one rule removes a whole class of tool-misuse attacks, and it is easy to explain in an interview.
 
+## Spike and implementation notes (2026-10-09)
+
+- S3 confirmed: `header_provider` gets the session, so the seller sets `X-Haggle-Game-Id` from
+  `ctx.session.id`. The generated input schemas of `evaluate_offer` and `close_deal` contain no
+  game id at all, and a test (`test_no_tool_lets_the_llm_choose_the_game`) keeps it that way.
+- The MCP SDK v2 docstring of `Context.headers` warns: *"Headers are client-supplied input -
+  never treat one as an identity assertion."* That is why the game header is trusted **only**
+  together with a valid `seller` token.
+- The SDK's own middleware hook is marked *provisional*, so authentication is a plain ASGI
+  middleware (`haggle_mcp/auth.py`).
+- The 2026-07-28 spec says list endpoints must not vary per connection: every client sees every
+  tool, and scopes are enforced **when a tool is called**.
+
 ## Consequences
 
 - Tool input schemas contain only what the model legitimately decides (`offer_usd`, `price_usd`, `query`).
-- The MCP rejects seller-scope calls without a valid game header (400) and logs them.
+- The MCP answers seller-scope calls without a valid game header with a tool error (`isError: true`), and unknown tokens with HTTP 401.
 - The buyer gets the `catalog` scope only. Even a compromised buyer prompt cannot call `evaluate_offer` (the server enforces this, not just client-side tool filtering).
 - Adding a tool later means asking "does it need trusted context?" and reading it from headers.

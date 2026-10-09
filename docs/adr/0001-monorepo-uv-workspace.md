@@ -1,6 +1,6 @@
 # ADR-0001: Monorepo with a uv workspace
 
-- **Status:** Proposed. Confirm after spike S1 (Week 2).
+- **Status:** Accepted (2026-10-09, after spike S1).
 - **Date:** 2026-10-08
 
 ## Context
@@ -32,6 +32,15 @@ The agent frameworks are heavy and move fast: ADK 2.11 pins `mcp >=1.24,<3` and 
 - The `haggle-core` package must stay **framework-free** (Pydantic, SQLAlchemy only). Otherwise every service pulls ADK.
 - Dockerfiles copy the whole workspace but install only one member (`uv sync --frozen --no-dev --package haggle-seller`).
 - Dependabot/Renovate PRs update one lockfile. CI runs all tests on every bump.
+
+## Spike S1 result (2026-10-09)
+
+ADK 2.11.0, MCP SDK 2.3.0 and a2a-sdk 1.2.2 share one lockfile. The escape hatch was **not**
+needed for `mcp`. The conflict that did appear was transitive: ADK pins
+`opentelemetry-api <= 1.42.1`, FastAPI 0.143 requires `>= 1.44`. uv resolved it *silently* by
+picking ADK 1.10.0 until `google-adk>=2.11` was forced. Lesson: **put lower bounds on the
+frameworks you care about**, otherwise a resolver may "solve" a conflict by downgrading them.
+FastAPI now resolves to 0.141.1.
 
 ## Revisit if
 

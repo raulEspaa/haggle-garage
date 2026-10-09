@@ -33,6 +33,11 @@ Status: **V** = verified from an official source · **P** = partially verified (
 | httpx2 | Replaces `httpx` for Starlette's `TestClient` (otherwise `StarletteDeprecationWarning`). Maintained by the Pydantic org. 2.13.1 | V | [httpx2](https://github.com/pydantic/httpx2) |
 | Dependabot | Supports `package-ecosystem: uv` | V | [Dependabot options](https://docs.github.com/en/code-security/dependabot/working-with-dependabot/dependabot-options-reference) |
 | gitleaks-action | v3.0.0. No license needed for personal accounts | V | [gitleaks-action](https://github.com/gitleaks/gitleaks-action) |
+| Week 2 resolved versions | google-adk 2.11.0, mcp 2.3.0, a2a-sdk 1.2.2, google-genai 2.29.0, FastAPI 0.141.1 (capped by ADK's OpenTelemetry pin), opentelemetry-api 1.42.1, starlette 1.7.0 | V | `uv.lock` |
+| ADK 2.11 pins `opentelemetry-api <= 1.42.1`. FastAPI 0.143 needs `>= 1.44` | Incompatible: uv silently picked ADK 1.10.0 until `google-adk>=2.11` was forced | V | `uv add` resolver output |
+| SQLAlchemy 2.1 | `greenlet` no longer installed by default: the async engine needs `sqlalchemy[asyncio]` | V | runtime `ImportError` |
+| MCP SDK v2 server | `MCPServer.middleware` marked *provisional*. `Context.headers` exists ("never treat one as an identity assertion"). `server/discover` returned *Method not found* in stateless HTTP mode (2.3.0) | V | installed source, spike |
+| a2a-sdk 1.x | Models are protobuf (`a2a.types.a2a_pb2`). Helpers in `a2a.helpers` (`new_text_message(text, context_id=...)`, `get_artifact_text`) | V | installed source |
 | Langfuse self-host major | v4 | P | [Langfuse self-hosting](https://langfuse.com/self-hosting) |
 
 ## 3. ADK APIs used by the design

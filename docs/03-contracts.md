@@ -9,7 +9,7 @@ Contracts are what other components (and future you) depend on. Change them deli
 | Money | Integer **whole USD** (`*_usd`). No floats for prices. |
 | IDs | `game_id`: UUIDv4, created by the api. It is also used as the A2A `contextId`, which must be a UUID for LangGraph compatibility. Cars use slugs (`kestrel-440-1970`). |
 | Time | UTC, ISO 8601 with offset in JSON (`2026-10-08T17:02:00Z`). |
-| Versioning | Payload schemas carry `schema: "haggle.<name>.v<N>"`. Prompts are versioned files; `prompt_version` is stored per game. |
+| Versioning | Payload schemas carry `schema_version: "haggle.<name>.v<N>"` (Week 2: renamed from `schema`, which shadows a Pydantic `BaseModel` attribute). Prompts are versioned files; `prompt_version` is stored per game. |
 | Secrets in payloads | **No API, tool or A2A response field may be a function of the floor**, except the concession curve output (§1.4) and the post-game reveal. Error reasons are generic on purpose. |
 
 ## 1. MCP server
@@ -26,7 +26,7 @@ The MCP authorization spec (OAuth 2.1) targets third-party clients acting on beh
 
 | Header | Set by | Purpose |
 |--------|--------|---------|
-| `X-Haggle-Token` | seller / buyer config (Secret Manager) | App-level auth. The token maps to a **scope**: `seller` (all tools) or `catalog` (only `lookup_model_sheet`). Checked by middleware on every request in both environments. |
+| `X-Haggle-Token` | seller / buyer config (Secret Manager) | App-level auth. The token maps to a **scope**: `seller` (all tools) or `catalog` (only `lookup_model_sheet`). Unknown token → HTTP 401 (ASGI middleware). Scope checked **when a tool is called**: per the 2026-07-28 spec, `tools/list` is the same for every client. |
 | `X-Haggle-Game-Id` | seller code via `header_provider` (from the session, **not the LLM**) | Which game the call belongs to. Required for `evaluate_offer` and `close_deal`. |
 | `CF-Access-Client-Id`, `CF-Access-Client-Secret` | seller config | Cloudflare Access Service Auth, home backend only. Requests without them never reach the house. |
 | `Authorization: Bearer <Google ID token>` | seller (google-auth) | Cloud Run IAM, cloud backend only. |
@@ -66,9 +66,9 @@ Output schema (`structuredContent`):
 {
   "type": "object",
   "additionalProperties": false,
-  "required": ["schema", "decision", "turn", "final_offer"],
+  "required": ["schema_version", "decision", "turn", "final_offer", "reason"],
   "properties": {
-    "schema": { "const": "haggle.offer_decision.v1" },
+    "schema_version": { "const": "haggle.offer_decision.v1" },
     "decision": { "enum": ["accept", "counter", "reject"] },
     "accepted_usd": { "type": ["integer", "null"], "description": "Set when decision = accept (equals offer_usd)." },
     "counter_usd": { "type": ["integer", "null"], "description": "Price to quote when decision = counter or reject (reject repeats the last counter)." },
@@ -108,9 +108,9 @@ Server rules:
 {
   "type": "object",
   "additionalProperties": false,
-  "required": ["schema", "status"],
+  "required": ["schema_version", "status"],
   "properties": {
-    "schema": { "const": "haggle.close_result.v1" },
+    "schema_version": { "const": "haggle.close_result.v1" },
     "status": { "enum": ["closed", "rejected"] },
     "deal_id": { "type": ["string", "null"] },
     "price_usd": { "type": ["integer", "null"] },
@@ -148,9 +148,9 @@ Server rules (all in one DB transaction):
 ```json
 {
   "type": "object",
-  "required": ["schema", "results"],
+  "required": ["schema_version", "results"],
   "properties": {
-    "schema": { "const": "haggle.sheet_results.v1" },
+    "schema_version": { "const": "haggle.sheet_results.v1" },
     "results": {
       "type": "array",
       "items": {

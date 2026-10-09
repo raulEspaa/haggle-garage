@@ -1,6 +1,6 @@
 # ADR-0006: Seller = A2A server, buyer = A2A client, no LangGraph Agent Server
 
-- **Status:** Proposed. Confirm after spikes S2/S6.
+- **Status:** Accepted (2026-10-09, after spikes S2/S6).
 - **Date:** 2026-10-08
 
 ## Context
@@ -36,6 +36,15 @@ It keeps one protocol hop and one server to secure, while still showing A2A inte
 - "Bring your own buyer": publish the seller's A2A endpoint with per-key quotas. Third parties connect with any A2A client.
 - An ADK "coach" agent that consumes the seller via `RemoteA2aAgent` to suggest moves to human players.
 - Exposing the buyer through `langgraph dev` locally to try the Agent Server A2A endpoint as a learning exercise (1–2 h, Could).
+
+## Spike results (2026-10-09)
+
+- `to_a2a(agent, runner=Runner(..., session_service=DatabaseSessionService(...)))` works with
+  a2a-sdk 1.2.2 (spec 1.0). A **client-provided `contextId` becomes the ADK session id**, so
+  `game_id` = contextId = session id holds with no glue code.
+- Each `SendMessage` returns a completed **Task**. The answer is in `task.artifacts`.
+- a2a-sdk 1.x models are **protobuf** messages (`a2a.types.a2a_pb2`), not Pydantic. Keep them
+  behind our client wrapper.
 
 ## Consequences
 

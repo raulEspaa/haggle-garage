@@ -281,3 +281,14 @@ Week 2 has a **tracer bullet**: the smallest path through ADK → MCP → A2A. E
 | S4 | Can the tool list differ per session (level) and per backend (home/cloud)? Options: a `tool_filter` predicate, or a custom `BaseToolset.get_tools(readonly_context)`. | One `LlmAgent` per level plus a code-only router agent (`BaseAgent`) that dispatches on `state["level"]`. |
 | S5 | `output_schema` + tools together on `gemini-3.1-flash-lite` (reported to work on Gemini 3.x) | Seller returns free text, and a cheap second call extracts `SellerTurn`. |
 | S6 | Where does ADK's A2A executor put the final output (task artifact vs status message), and can we add a DataPart? | `after_agent_callback` appends the DataPart content, or the client reads the state from the DB (`GET /api/games/{id}`). |
+
+### Spike results (Week 2, `spikes/w02_tracer_bullet.py`, run with `make spike`)
+
+| # | Result | Evidence |
+|---|--------|----------|
+| S1 | ✅ **Yes**: google-adk 2.11.0 + mcp 2.3.0 + a2a-sdk 1.2.2 in one `uv.lock`. The real conflict was **OpenTelemetry**: ADK pins `opentelemetry-api <= 1.42.1` and FastAPI 0.143 needs `>= 1.44`. uv silently fell back to ADK **1.10** until forced. Fix: FastAPI floor relaxed (resolves to 0.141.1). | `uv add "google-adk[a2a]>=2.11"` error message, `uv.lock` |
+| S2 | ✅ A client-provided `contextId` is accepted and **becomes the ADK session id**. The ADK user id is `A2A_USER_<contextId>`. Session state persisted in Postgres across two messages (`turns: 2`). | Spike output |
+| S3 | ✅ `McpToolset(header_provider=...)` receives the `ReadonlyContext`. The MCP tool read `X-Haggle-Game-Id` = session id. | Spike output |
+| S4 | ✅ by source reading: `tool_filter` accepts a `ToolPredicate(tool, readonly_context)`, so tools can be hidden per level from session state. Exercised in Week 3. | `google/adk/tools/base_toolset.py` |
+| S5 | ⏳ Needs a real LLM: Week 3. | — |
+| S6 | ✅ One A2A **Task per turn**, state `TASK_STATE_COMPLETED`. The agent's answer is in `task.artifacts`, and the status message is empty. a2a-sdk 1.x types are **protobuf** (`a2a_pb2`). | Spike output |

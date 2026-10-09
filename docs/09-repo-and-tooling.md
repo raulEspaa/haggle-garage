@@ -125,7 +125,7 @@ On every PR and on `main`:
 | `langchain-mcp-adapters` | 0.3.2 (2026-08-06) | `MultiServerMCPClient`, transport `http`/`streamable_http`, custom headers. |
 | `langgraph-api` | ≥ 0.4.21 for A2A | Not used in the MVP (ADR-0006). |
 | `langfuse` | current major **[unverified]** | ADK via `openinference-instrumentation-google-adk`. LangGraph via `langfuse.langchain.CallbackHandler`. |
-| FastAPI, SQLAlchemy, Alembic, pgvector-python, mypy | 0.143.0, **2.1.4**, 1.20.0, 0.5.0, **2.4.0** (W1) | Pinned in `uv.lock`. |
+| FastAPI, SQLAlchemy, Alembic, pgvector-python, mypy | **0.141.1** (W2: capped by ADK's OpenTelemetry pin), **2.1.4** with the `[asyncio]` extra, 1.20.0, 0.5.0, **2.4.0** | Pinned in `uv.lock`. |
 | Terraform `hashicorp/google` | 8.6.0 (W1) | Pinned in `.terraform.lock.hcl`. |
 
 ## 7. Conventions

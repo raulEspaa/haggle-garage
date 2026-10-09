@@ -5,14 +5,14 @@ An ADR is **immutable once Accepted**. To change a decision, write a new ADR tha
 
 | ADR | Title | Status |
 |-----|-------|--------|
-| [0001](0001-monorepo-uv-workspace.md) | Monorepo with a uv workspace | Proposed |
+| [0001](0001-monorepo-uv-workspace.md) | Monorepo with a uv workspace | Accepted (spike, 2026-10-09) |
 | [0002](0002-home-mcp-ingress.md) | Home MCP ingress: Cloudflare Tunnel + Access (Tailscale for admin) | Proposed (needs domain: open decision #1) |
 | [0003](0003-gemini-api-vs-vertex.md) | Gemini API (AI Studio) over Vertex AI / Agent Platform | Proposed |
 | [0004](0004-langfuse-cloud.md) | Langfuse Cloud (Hobby) over self-hosted | Proposed |
 | [0005](0005-neon-postgres.md) | Neon Postgres (free) as the single shared database | Proposed |
-| [0006](0006-agent-topology.md) | Seller = A2A server, buyer = A2A client, no LangGraph Agent Server | Proposed |
+| [0006](0006-agent-topology.md) | Seller = A2A server, buyer = A2A client, no LangGraph Agent Server | Accepted (spike, 2026-10-09) |
 | [0007](0007-guard-ladder.md) | Guard ladder: the model talks, code decides | Proposed (confirm A12) |
-| [0008](0008-trusted-context-headers.md) | Trusted context via headers, never LLM arguments | Proposed |
+| [0008](0008-trusted-context-headers.md) | Trusted context via headers, never LLM arguments | Accepted (spike, 2026-10-09) |
 | [0009](0009-server-rendered-ui.md) | Server-rendered web UI, no SPA | Proposed |
 | [0010](0010-fictional-car-models.md) | Fictional car models for synthetic data and RAG | Proposed |
 

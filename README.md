@@ -4,7 +4,7 @@ Negotiate with an AI used-car dealer, or make it leak its secret minimum price.
 A portfolio project about agents (Google ADK, LangGraph), protocols (MCP, A2A), RAG, evals and
 LLM security, deployed on Cloud Run.
 
-> **Status:** Week 1 of 8. Foundations and walking skeleton. Nothing playable yet.
+> **Status:** Week 2 of 8. Policy engine and MCP server done; the seller agent comes in Week 3.
 
 ## Quickstart (local)
 
@@ -25,6 +25,9 @@ make api                # http://127.0.0.1:8080/health
 |------|------|
 | `packages/core` | Shared settings, domain enums, DB models, seed loader |
 | `services/api` | FastAPI public API (health endpoint only, for now) |
+| `services/mcp` | MCP server: `evaluate_offer`, `close_deal` (policy engine + deal validation) |
+| `services/seller` | ADK seller agent (Week 3) |
+| `spikes/` | Throwaway experiments that de-risked the design (`make spike`) |
 | `db/` | Alembic migrations, seed data, Postgres init scripts |
 | `infra/terraform` | GCP: Artifact Registry, Cloud Run, service accounts |
 | `docs/` | Architecture, ADRs, plans ([start here](docs/README.md)) |
