@@ -1,6 +1,6 @@
 # ADR-0010: Fictional car models for synthetic data and RAG
 
-- **Status:** Proposed
+- **Status:** Superseded by [ADR-0011](0011-real-iconic-cars.md) (2026-10-09)
 - **Date:** 2026-10-08
 
 ## Context

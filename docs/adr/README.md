@@ -14,6 +14,7 @@ An ADR is **immutable once Accepted**. To change a decision, write a new ADR tha
 | [0007](0007-guard-ladder.md) | Guard ladder: the model talks, code decides | Proposed (confirm A12) |
 | [0008](0008-trusted-context-headers.md) | Trusted context via headers, never LLM arguments | Accepted (spike, 2026-10-09) |
 | [0009](0009-server-rendered-ui.md) | Server-rendered web UI, no SPA | Proposed |
-| [0010](0010-fictional-car-models.md) | Fictional car models for synthetic data and RAG | Proposed |
+| [0010](0010-fictional-car-models.md) | Fictional car models for synthetic data and RAG | Superseded by 0011 |
+| [0011](0011-real-iconic-cars.md) | Real iconic cars (1960s-1980s) with dealer-specific synthetic data | Accepted |
 
 Status flow: `Proposed` → `Accepted` (after your review, or after the Week 2 spike for 0001/0006/0008) → `Superseded by NNNN` when replaced.

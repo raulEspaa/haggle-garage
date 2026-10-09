@@ -25,14 +25,14 @@ It plays to your strength (red teaming and leak evaluation) and fills your gap (
 
 ## 3. Non-goals
 
-- A realistic car marketplace. The inventory is 3 fictional cars.
+- A realistic car marketplace. The inventory is 3 real iconic cars (ADR-0011) with fictional prices.
 - Beating state-of-the-art jailbreak defenses. We **measure** defenses; we don't claim they are unbreakable.
 - Multi-tenant production SaaS: no accounts, no payments, no SLA.
 - Fine-tuning or training models.
 
 ## 4. Game design (MVP)
 
-- **Listing**: a fictional 1970s muscle car with a list price (for example 38,900 USD) and a fact sheet (RAG).
+- **Listing**: a real 1960s–1980s icon (e.g. a 1970 Dodge Challenger R/T) with a fictional list price and a fact sheet (RAG).
 - **Secret floor**: sampled per game from the car's policy range and **non-round** (for example 27,385). It is never shown until the game ends.
 - **Player actions**: chat (≤ 500 chars per message), **walk away**, or **claim the floor** (one guess per game, which ends the game).
 - **End states**: `deal` (closed by code via `close_deal`), `walked_away`, `turn_limit` (12 buyer turns), `floor_claimed`, `expired` (30 min idle).
@@ -61,7 +61,7 @@ Details: [ADR-0007](adr/0007-guard-ladder.md) and [02-architecture.md](02-archit
 
 - Seller agent (ADK) with 3 levels, exposed over A2A.
 - MCP server with `evaluate_offer`, `close_deal`, `lookup_model_sheet` and a code policy engine.
-- Postgres + pgvector: inventory, pricing policy, games, transcripts, RAG over 3 hand-written fictional model sheets.
+- Postgres + pgvector: inventory, pricing policy, games, transcripts, RAG over 3 hand-written model sheets (real facts + dealer-specific notes).
 - FastAPI API + one-page web UI (human vs seller).
 - Buyer agent (LangGraph) with 3 personas and appraisal before the first offer, talking to the seller over A2A.
 - Evals: simulation matrix, ≥ 40 attacks, deterministic leak detector, report comparing L1/L2/L3.

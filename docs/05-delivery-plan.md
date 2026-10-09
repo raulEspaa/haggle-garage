@@ -19,7 +19,7 @@ Budget: **~73 h planned** of the 64–80 h available. Planned hours stay below t
 | GitHub repo, uv workspace skeleton, Python 3.13, ruff/mypy/pytest config, pre-commit (ruff, gitleaks) | 1.0 |
 | GitHub Actions CI: lint, format check, types, tests on every PR | 1.0 |
 | `compose.yaml` with `pgvector/pgvector`. SQLAlchemy models + Alembic initial migration (all tables in [03 §4](03-contracts.md#4-data-model)) | 2.0 |
-| Seed script: 3 fictional cars + pricing policies | 1.0 |
+| Seed script: 3 cars + pricing policies (fictional brand at first, real icons since ADR-0011) | 1.0 |
 | Accounts and guardrails: GCP project + **budget alerts 50/90/100%**. AI Studio `haggle-dev` (free) and `haggle-prod` (prepay 10 USD + spend cap). Langfuse Cloud EU. Neon project. Calendar reminder: trial ends at day 90. | 1.5 |
 | Terraform bootstrap: GCS state bucket, Artifact Registry (cleanup policy), Cloud Run "hello" (`/health`) | 2.5 |
 
@@ -83,7 +83,7 @@ Budget: **~73 h planned** of the 64–80 h available. Planned hours stay below t
 | Langfuse `CallbackHandler`, `langfuse_session_id = game_id` | 1.0 |
 | *(Should)* `POST /api/matches` SSE + "watch AI vs AI" in the UI | 1.5 |
 
-- **Deliverable:** `uv run haggle-buyer --car kestrel-440-1970 --level 2 --persona manipulator`.
+- **Deliverable:** `uv run haggle-buyer --car dodge-challenger-rt-1970 --level 2 --persona manipulator`.
 - **Done when:** 9 runs (3 personas × 3 levels) finish without errors, buyer and seller traces share a session, and the guard tests pass.
 - **You learn:** LangGraph state, reducers, conditional edges; structured output; one MCP server consumed from a second framework.
 

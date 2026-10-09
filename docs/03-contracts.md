@@ -7,7 +7,7 @@ Contracts are what other components (and future you) depend on. Change them deli
 | Topic | Rule |
 |-------|------|
 | Money | Integer **whole USD** (`*_usd`). No floats for prices. |
-| IDs | `game_id`: UUIDv4, created by the api. It is also used as the A2A `contextId`, which must be a UUID for LangGraph compatibility. Cars use slugs (`kestrel-440-1970`). |
+| IDs | `game_id`: UUIDv4, created by the api. It is also used as the A2A `contextId`, which must be a UUID for LangGraph compatibility. Cars use slugs (`dodge-challenger-rt-1970`). |
 | Time | UTC, ISO 8601 with offset in JSON (`2026-10-08T17:02:00Z`). |
 | Versioning | Payload schemas carry `schema_version: "haggle.<name>.v<N>"` (Week 2: renamed from `schema`, which shadows a Pydantic `BaseModel` attribute). Prompts are versioned files; `prompt_version` is stored per game. |
 | Secrets in payloads | **No API, tool or A2A response field may be a function of the floor**, except the concession curve output (§1.4) and the post-game reveal. Error reasons are generic on purpose. |
@@ -310,13 +310,13 @@ Base path `/api`. JSON. Errors use **RFC 9457 Problem Details** (`application/pr
 
 ```jsonc
 // request
-{ "car_id": "kestrel-440-1970", "level": 3 }
+{ "car_id": "dodge-challenger-rt-1970", "level": 3 }
 // 201 response
 {
   "game_id": "8d2f0b7e-0c1a-4e53-9b0e-6f1d2a3b4c5d",
   "game_token": "opaque-random-43-chars",
   "level": 3,
-  "car": { "id": "kestrel-440-1970", "title": "1970 Vantor Kestrel 440 R/S", "list_price_usd": 38900 },
+  "car": { "id": "dodge-challenger-rt-1970", "title": "1970 Dodge Challenger R/T", "list_price_usd": 104900 },
   "turn_cap": 12,
   "expires_at": "2026-10-08T17:32:00Z",
   "seller_message": "Templated greeting (no LLM call)."
@@ -371,7 +371,7 @@ erDiagram
 
     CARS {
         text id PK "slug"
-        text make "fictional"
+        text make "real make"
         text model
         smallint year
         int mileage_mi

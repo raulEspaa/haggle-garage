@@ -20,7 +20,7 @@ Probability (P) and impact (I) are rated H/M/L.
 | R12 | Langfuse units exceed 50k/month | L/L | Sample demo traces at 25%. Evals keep 100%. | Langfuse usage page |
 | R13 | Neon free limits or cold-start latency | L/L | Pre-warm. Tiny data. The upgrade path is pay-as-you-go. | Latency on first query |
 | R14 | Life happens (burnout, busy weeks) | M/H | Built-in slack. Cut early, not late. Checkpoint rituals. | Two weeks under 6 h |
-| R15 | Legal/brand: real brands, scraped data, personal data | L/M | Fictional models (ADR-0010), synthetic data, privacy note, 30-day retention. | — |
+| R15 | Legal/brand: real brands, scraped data, personal data | L/M | Real models used descriptively, no logos, "not affiliated" notice (ADR-0011). Synthetic prices and listings, privacy note, 30-day retention. | — |
 
 ## 2. Cost estimate
 

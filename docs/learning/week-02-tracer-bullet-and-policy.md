@@ -12,7 +12,7 @@
 | Property tests pass 1,000 examples per invariant | ✅ I1–I5, after Hypothesis found a real bug (§3) |
 | `close_deal` below the floor returns `not_accepted` | ✅ at every level, with the precise reason only in the audit log |
 | A real client can call both tools with a token, and gets 401 without one | ✅ end-to-end over HTTP with the official MCP client, plus `curl` against the container |
-| Model sheets #1 and #2 written | ⏳ **your turn**: template in [`db/sheets/_TEMPLATE.md`](../../db/sheets/_TEMPLATE.md) |
+| Model sheets written | ✅ three sheets with real, sourced facts ([ADR-0011](../adr/0011-real-iconic-cars.md)) in [`db/sheets/`](../../db/sheets/) |
 
 ---
 
@@ -98,7 +98,7 @@ The policy takes numbers and returns a decision. No database, no clock, no LLM. 
 target(t) = F + (L − F) · (1 − (t/T)^(1/β))        β = 0.5 → concede late
 ```
 
-Real output for the Kestrel (L = 38,900, secret F = 27,385, margin 3.4%, 12 turns, buyer
+Real output for the example policy used in the tests (L = 38,900, secret F = 27,385, margin 3.4%, 12 turns, buyer
 stubbornly offering 25,000):
 
 | turn | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12 |
@@ -254,7 +254,7 @@ That's the whole protocol: JSON-RPC 2.0 over HTTP POST. No magic.
 
 ## 7. Your turn
 
-1. **Write model sheets #1 and #2** (≈ 1 h): Kestrel and Brigand, using
+1. ~~Write model sheets #1 and #2~~ Done instead by Claude at your request, with **real** cars (ADR-0011): read them in `db/sheets/` and check the facts against the sources in each front matter. Template:
    [`db/sheets/_TEMPLATE.md`](../../db/sheets/_TEMPLATE.md). Keep them consistent with
    [`db/seed/cars.yaml`](../../db/seed/cars.yaml). Week 3 embeds them for RAG.
 2. **Break an invariant on purpose:** in `policy.py`, change `ceil_to_step` to round *down*

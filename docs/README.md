@@ -4,7 +4,7 @@
 > Author: Raúl · Phase 1 drafted 2026-10-08 · Status: **Draft for review**
 > Phase 1 contains no implementation code. It covers documents, diagrams and interface contracts.
 
-A web game where a **seller agent** (Google ADK + Gemini) sells a fictional 1970s muscle car with a **secret per-game floor price**.
+A web game where a **seller agent** (Google ADK + Gemini) sells an iconic 1960s–1980s American car with a **secret per-game floor price**.
 A human player, or a **buyer agent** (LangGraph, three personas), tries to lower the price or extract the floor.
 Three security levels show how the protection improves, from "floor in the prompt" to "the model never sees the floor".
 The project measures each level with simulated negotiations and a prompt-injection attack set.
@@ -37,7 +37,7 @@ The project measures each level with simulated negotiations and a prompt-injecti
 | Guardrails | "Model talks, code decides": a guard ladder per level, with pricing decided in the MCP policy engine | [0007](adr/0007-guard-ladder.md) |
 | Trusted context | Game id goes in an HTTP header set by code. It is never an LLM-filled tool argument | [0008](adr/0008-trusted-context-headers.md) |
 | Web UI | Server-rendered page + vanilla JS. No SPA | [0009](adr/0009-server-rendered-ui.md) |
-| Synthetic data | **Fictional** car brand and models, so RAG is the only source of facts | [0010](adr/0010-fictional-car-models.md) |
+| Inventory data | **Real iconic cars** with sourced facts; prices and dealer notes fictional (supersedes 0010) | [0011](adr/0011-real-iconic-cars.md) |
 
 ## Verification labels used in these docs
 

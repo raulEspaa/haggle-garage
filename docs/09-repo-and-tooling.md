@@ -26,7 +26,7 @@ haggle-garage/
 ├── db/
 │   ├── migrations/                # Alembic
 │   ├── seed/                      # cars.yaml, policies.yaml (synthetic)
-│   └── sheets/                    # fictional model sheets (Markdown)
+│   └── sheets/                    # model sheets: real sourced facts + dealer notes (Markdown)
 ├── infra/terraform/               # flat: main.tf, run.tf, iam.tf, secrets.tf, budget.tf, variables.tf, outputs.tf
 ├── deploy/home/                   # LXC notes, systemd units, cloudflared config template (no secrets)
 └── docs/                          # these docs, results/ (eval reports, deploy checklist), journal.md

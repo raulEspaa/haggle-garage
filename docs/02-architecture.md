@@ -7,7 +7,7 @@
 | P1 | **The model talks, code decides.** | Prices (L3) and closing (all levels) are decided by the MCP policy engine and validated by ADK callbacks. The LLM only verbalizes. |
 | P2 | **The demo cannot depend only on the home lab.** | MCP is stateless (all state is in Postgres), so the same image runs at home or on Cloud Run. The database is managed (Neon), not at home. |
 | P3 | **Public demo with a turn cap, per-IP limits and a maximum budget.** | Defense in layers: API limits → seller budget guard → provider hard spend cap. See [07-threat-model.md](07-threat-model.md). |
-| P4 | **Synthetic data only.** | Fictional brand and models ([ADR-0010](adr/0010-fictional-car-models.md)). |
+| P4 | **Synthetic data only** for anything personal or commercial. | Real car models with sourced public facts; prices, listings and dealer notes are fictional ([ADR-0011](adr/0011-real-iconic-cars.md)). |
 | P5 | **Trusted context never passes through the LLM.** | The game id travels in headers set by code ([ADR-0008](adr/0008-trusted-context-headers.md)). |
 | P6 | **Thin wrappers around fast-moving frameworks.** | ADK A2A is *experimental*, MCP SDK v2 has breaking renames, A2A is now 1.0. Every framework call sits behind a small module of ours, and shared types live in `haggle-core`. |
 | P7 | **One writer per fact.** | Each table/column has one owning service (§7). Fewer races, simpler reasoning. |
