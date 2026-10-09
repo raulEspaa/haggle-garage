@@ -1,4 +1,4 @@
-# Local development stack. Services are added here as they are built (mcp, seller...).
+# Local development stack: db, mcp, seller and api (the whole game on your machine).
 #   make db-up        start only Postgres
 #   docker compose up --build api
 name: haggle
@@ -33,6 +33,7 @@ services:
       # Local-only tokens. In the cloud they come from Secret Manager (week 7).
       HAGGLE_MCP_SELLER_TOKEN: local-seller-token
       HAGGLE_MCP_CATALOG_TOKEN: local-catalog-token
+      HAGGLE_MCP_ALLOWED_HOSTS: '["mcp:*", "127.0.0.1:*", "localhost:*"]'
     ports:
       - "127.0.0.1:8100:8100"
     depends_on:
@@ -52,6 +53,7 @@ services:
       HAGGLE_DATABASE_URL: postgresql+psycopg://haggle:haggle@db:5432/haggle
       HAGGLE_SELLER_MCP_URL: http://mcp:8100/mcp
       HAGGLE_SELLER_MCP_TOKEN: local-seller-token # must match the mcp service above
+      HAGGLE_SELLER_PUBLIC_URL: http://seller:8200 # what the agent card tells the api to call
     ports:
       - "127.0.0.1:8200:8200"
     depends_on:
@@ -64,14 +66,21 @@ services:
     build:
       context: .
       dockerfile: services/api/Dockerfile
+    env_file: # LANGFUSE_* (optional)
+      - path: .env
+        required: false
     environment:
       HAGGLE_ENV: local
       HAGGLE_DATABASE_URL: postgresql+psycopg://haggle:haggle@db:5432/haggle
+      HAGGLE_API_SELLER_URL: http://seller:8200
+      HAGGLE_API_GAMES_PER_IP_PER_DAY: 100 # local only: the public demo keeps the default (5)
     ports:
       - "127.0.0.1:8080:8080"
     depends_on:
       db:
         condition: service_healthy
+      seller:
+        condition: service_started
 
 volumes:
   pgdata:
