@@ -6,8 +6,8 @@ import uuid
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
-from haggle_core.db.models import Car, Game, PricingPolicy
-from haggle_core.domain import GameMode, Level
+from haggle_core.db.models import Car, Game, PricingPolicy, Turn
+from haggle_core.domain import GameMode, Level, TurnRole
 from haggle_core.policy import sample_floor, sample_margin
 
 # SECURITY: floors are secrets revealed after each game. Mersenne Twister (random.Random) can be
@@ -23,6 +23,9 @@ async def create_game(
     mode: GameMode,
     turn_cap: int = 12,
     rng: random.Random = _SECRET_RNG,
+    client_ip_hash: str | None = None,
+    game_token_hash: str | None = None,
+    opening_message: str | None = None,
 ) -> uuid.UUID:
     async with sessions() as session, session.begin():
         row = (
@@ -44,6 +47,11 @@ async def create_game(
             floor_usd=sample_floor(policy.floor_min_usd, policy.floor_max_usd, rng),
             counter_margin=sample_margin(policy.margin_min, policy.margin_max, rng),
             turn_cap=turn_cap,
+            client_ip_hash=client_ip_hash,
+            game_token_hash=game_token_hash,
         )
         session.add(game)
+        if opening_message:
+            await session.flush()  # the game row must exist before its first transcript line
+            session.add(Turn(game_id=game.id, seq=0, role=TurnRole.SELLER, content=opening_message))
         return game.id
