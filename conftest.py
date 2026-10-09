@@ -101,7 +101,7 @@ NewGame = Callable[..., uuid.UUID]
 
 @pytest.fixture
 def new_game(migrated_engine: Engine) -> NewGame:
-    """Factory: insert a committed game and return its id. Defaults mirror a real Kestrel game."""
+    """Factory: insert a committed game (on the 1970 Challenger) and return its id."""
 
     def _create(
         *,
@@ -116,7 +116,7 @@ def new_game(migrated_engine: Engine) -> NewGame:
             conn.execute(
                 insert(Game).values(
                     id=game_id,
-                    car_id="vantor-kestrel-rs-1970",
+                    car_id="dodge-challenger-rt-1970",
                     level=level,
                     mode="eval",
                     list_price_usd=38_900,

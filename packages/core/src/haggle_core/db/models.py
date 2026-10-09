@@ -108,13 +108,13 @@ class Car(Base):
 
     __tablename__ = "cars"
     __table_args__ = (
-        CheckConstraint("year BETWEEN 1960 AND 1979", name="year_range"),
+        CheckConstraint("year BETWEEN 1960 AND 1989", name="year_range"),
         CheckConstraint("mileage_mi >= 0", name="mileage_non_negative"),
         CheckConstraint("condition_grade BETWEEN 1 AND 5", name="condition_grade_range"),
         CheckConstraint("list_price_usd > 0", name="list_price_positive"),
     )
 
-    id: Mapped[str] = mapped_column(primary_key=True)  # slug, e.g. "vantor-kestrel-rs-1970"
+    id: Mapped[str] = mapped_column(primary_key=True)  # slug, e.g. "dodge-challenger-rt-1970"
     make: Mapped[str]
     model: Mapped[str]
     year: Mapped[int] = mapped_column(SmallInteger)

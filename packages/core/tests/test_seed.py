@@ -9,8 +9,8 @@ from haggle_core.seed import CarSeed, SeedFile, load_seed
 
 def valid_car(**overrides: Any) -> dict[str, Any]:
     car: dict[str, Any] = {
-        "id": "vantor-test-1970",
-        "make": "Vantor",
+        "id": "test-make-model-1970",
+        "make": "TestMake",
         "model": "Test",
         "year": 1970,
         "engine": "V8",

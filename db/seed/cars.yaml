@@ -1,74 +1,80 @@
-# Synthetic inventory. Brand and models are FICTIONAL on purpose (ADR-0010):
-# the LLM cannot answer from pre-trained knowledge, so the RAG sheets are the only source of facts.
+# Inventory: real, iconic American performance cars from the 1960s-1980s (ADR-0011).
+# Specs come from the model sheets in db/sheets/ (sources listed there). The individual cars,
+# their history and ALL prices are fictional game data.
 #
 # `pricing` is SECRET: it defines the range each game's floor is sampled from.
 # Every game samples its own non-round floor in [floor_min_usd, floor_max_usd].
 
 cars:
-  - id: vantor-kestrel-rs-1970
-    make: Vantor
-    model: Kestrel
+  - id: chevrolet-camaro-z28-1969
+    make: Chevrolet
+    model: Camaro Z/28
+    year: 1969
+    trim: Z/28 coupe
+    engine: 302 cu in (4.9 L) V8, DZ code, Holley four-barrel, 290 hp advertised
+    transmission: 4-speed manual
+    mileage_mi: 68120
+    exterior_color: Hugger Orange
+    condition_grade: 2
+    list_price_usd: 94900
+    description_md: |
+      Documented 1969 Camaro Z/28 in Hugger Orange with black interior. Original DZ 302 and
+      four-speed per the documentation file, including a copy of the dealer invoice.
+      Body-off restoration in 2011, about 6,000 miles since. Small stone chip on the front
+      valance, light wear on the driver's seat bolster. Cowl-induction hood added during the
+      restoration (not factory).
+    pricing:
+      floor_min_usd: 68000
+      floor_max_usd: 74500
+      beta: 0.50
+      margin_min: 0.020
+      margin_max: 0.060
+      lowball_ratio: 0.550
+      price_step_usd: 100
+
+  - id: dodge-challenger-rt-1970
+    make: Dodge
+    model: Challenger R/T
     year: 1970
-    trim: R/S 440
-    engine: 7.2 L V8, four-barrel carburetor
-    transmission: 4-speed manual
-    mileage_mi: 61240
-    exterior_color: Sunfire Orange
+    trim: R/T hardtop, V-code 440 Six Pack
+    engine: 440 cu in (7.2 L) V8, Six Pack (3x2-barrel), 390 hp advertised
+    transmission: 4-speed manual, pistol-grip shifter
+    mileage_mi: 74880
+    exterior_color: Plum Crazy with white side stripe
     condition_grade: 2
-    list_price_usd: 38900
+    list_price_usd: 104900
     description_md: |
-      Numbers-matching Kestrel R/S in Sunfire Orange with a black vinyl top.
-      Older body-off restoration, documented with receipts. Runs strong, shifts clean.
-      Minor stone chips on the front valance. Original build sheet included.
+      1970 Challenger R/T hardtop, factory 440 Six Pack (V-code) with four-speed and pistol-grip
+      shifter. Original block per fender tag and VIN documentation. Restored in 2015: light paint
+      swirl marks and a small tear in the rear seat vinyl. Six Pack carburetors rebuilt in 2023.
     pricing:
-      floor_min_usd: 26500
-      floor_max_usd: 30500
+      floor_min_usd: 76000
+      floor_max_usd: 82500
       beta: 0.50
       margin_min: 0.020
       margin_max: 0.060
       lowball_ratio: 0.550
       price_step_usd: 100
 
-  - id: vantor-brigand-sport-1971
-    make: Vantor
-    model: Brigand
-    year: 1971
-    trim: Sport 383
-    engine: 6.3 L V8, two-barrel carburetor
-    transmission: 3-speed automatic
-    mileage_mi: 88410
-    exterior_color: Lagoon Teal
-    condition_grade: 3
-    list_price_usd: 31500
-    description_md: |
-      Honest driver-quality Brigand Sport fastback. Repainted once in the original color.
-      Interior redone in 2015. Small oil seep at the rear main seal. Ice-cold aftermarket A/C.
-    pricing:
-      floor_min_usd: 21000
-      floor_max_usd: 24500
-      beta: 0.50
-      margin_min: 0.020
-      margin_max: 0.060
-      lowball_ratio: 0.550
-      price_step_usd: 100
-
-  - id: vantor-halberd-gt-1972
-    make: Vantor
-    model: Halberd
-    year: 1972
-    trim: Grand Tour 455
-    engine: 7.5 L V8, four-barrel carburetor
-    transmission: 4-speed manual
-    mileage_mi: 42780
-    exterior_color: Midnight Burgundy
+  - id: buick-grand-national-1987
+    make: Buick
+    model: Grand National
+    year: 1987
+    trim: Grand National (no T-tops)
+    engine: 3.8 L turbocharged V6, sequential fuel injection, intercooler, 245 hp
+    transmission: 4-speed automatic
+    mileage_mi: 31450
+    exterior_color: Black
     condition_grade: 2
-    list_price_usd: 44900
+    list_price_usd: 57900
     description_md: |
-      Low-mileage Halberd Grand Tour, one of the last big-block cars before the 1973 changes.
-      Two owners, garage kept. Factory hood scoop and rally wheels. New tires and brakes.
+      Completely stock 1987 Grand National with 31,450 miles, original turbocharger and engine
+      computer. Original window sticker and service records. Headliner replaced in 2019 with a
+      correct reproduction, fuel pump replaced in 2022. Light scratch on the rear bumper cover,
+      minor wear on the driver's seat.
     pricing:
-      floor_min_usd: 31000
-      floor_max_usd: 35500
+      floor_min_usd: 42000
+      floor_max_usd: 46000
       beta: 0.50
       margin_min: 0.020
       margin_max: 0.060

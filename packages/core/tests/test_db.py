@@ -14,7 +14,7 @@ from haggle_core.seed import apply_seed, load_seed
 
 pytestmark = pytest.mark.db
 
-CAR_ID = "vantor-kestrel-rs-1970"
+CAR_ID = "dodge-challenger-rt-1970"
 
 
 def new_game(conn: Connection, *, level: int, floor_usd: int = 27385) -> uuid.UUID:

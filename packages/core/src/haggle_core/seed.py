@@ -51,7 +51,7 @@ class CarSeed(BaseModel):
     id: str = Field(pattern=SLUG_PATTERN)
     make: str
     model: str
-    year: int = Field(ge=1960, le=1979)
+    year: int = Field(ge=1960, le=1989)
     trim: str | None = None
     engine: str
     transmission: str

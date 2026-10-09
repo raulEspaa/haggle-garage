@@ -26,7 +26,7 @@ from haggle_core.policy import (
     target_price,
 )
 
-KESTREL = PolicyParams(
+EXAMPLE = PolicyParams(
     list_price_usd=38_900,
     floor_usd=27_385,
     turn_cap=12,
@@ -39,25 +39,25 @@ KESTREL = PolicyParams(
 
 # ----------------------------------------------------------------------------- examples
 def test_target_starts_near_list_and_ends_at_floor() -> None:
-    assert KESTREL.floor_usd < target_price(KESTREL, 1) < KESTREL.list_price_usd
-    assert target_price(KESTREL, KESTREL.turn_cap) == KESTREL.floor_usd
+    assert EXAMPLE.floor_usd < target_price(EXAMPLE, 1) < EXAMPLE.list_price_usd
+    assert target_price(EXAMPLE, EXAMPLE.turn_cap) == EXAMPLE.floor_usd
 
 
 def test_boulware_concedes_slowly_then_fast() -> None:
-    drops = [target_price(KESTREL, t) - target_price(KESTREL, t + 1) for t in range(1, 12)]
+    drops = [target_price(EXAMPLE, t) - target_price(EXAMPLE, t + 1) for t in range(1, 12)]
 
     assert drops == sorted(drops)  # each concession is bigger than the previous one
 
 
 def test_minimum_counter_is_above_floor_and_rounded() -> None:
-    lowest = minimum_counter(KESTREL)
+    lowest = minimum_counter(EXAMPLE)
 
     assert lowest == 28_400  # ceil_to_100(27_385 * 1.034 = 28_316.09)
-    assert lowest > KESTREL.floor_usd
+    assert lowest > EXAMPLE.floor_usd
 
 
 def test_lowball_is_rejected_without_moving() -> None:
-    result = decide(KESTREL, turn=1, offer_usd=15_000, last_counter_usd=38_900)
+    result = decide(EXAMPLE, turn=1, offer_usd=15_000, last_counter_usd=38_900)
 
     assert result.decision is Decision.REJECT
     assert result.reason is Reason.LOWBALL
@@ -65,19 +65,19 @@ def test_lowball_is_rejected_without_moving() -> None:
 
 
 def test_reasonable_offer_gets_a_counter() -> None:
-    result = decide(KESTREL, turn=3, offer_usd=27_000, last_counter_usd=38_900)
+    result = decide(EXAMPLE, turn=3, offer_usd=27_000, last_counter_usd=38_900)
 
     assert result.decision is Decision.COUNTER
     assert result.counter_usd is not None
-    assert minimum_counter(KESTREL) <= result.counter_usd < 38_900
+    assert minimum_counter(EXAMPLE) <= result.counter_usd < 38_900
     assert result.counter_usd % 100 == 0
 
 
 def test_floor_is_only_reachable_on_the_last_turn() -> None:
-    just_above_floor = KESTREL.floor_usd + 1
+    just_above_floor = EXAMPLE.floor_usd + 1
 
-    early = decide(KESTREL, turn=6, offer_usd=just_above_floor, last_counter_usd=38_900)
-    last = decide(KESTREL, turn=12, offer_usd=just_above_floor, last_counter_usd=28_400)
+    early = decide(EXAMPLE, turn=6, offer_usd=just_above_floor, last_counter_usd=38_900)
+    last = decide(EXAMPLE, turn=12, offer_usd=just_above_floor, last_counter_usd=28_400)
 
     assert early.decision is Decision.COUNTER
     assert last.decision is Decision.ACCEPT
@@ -85,7 +85,7 @@ def test_floor_is_only_reachable_on_the_last_turn() -> None:
 
 def test_bogus_last_counter_is_refused() -> None:
     with pytest.raises(ValueError, match="last_counter_usd"):
-        decide(KESTREL, turn=5, offer_usd=20_000, last_counter_usd=20_000)
+        decide(EXAMPLE, turn=5, offer_usd=20_000, last_counter_usd=20_000)
 
 
 def test_invalid_params_are_refused() -> None:
