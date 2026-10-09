@@ -283,8 +283,8 @@ The agent output carries two parts: a **text part** (`SellerTurn.message`) and a
 ### 2.6 Buyer internal contracts (LangGraph state, not on the wire)
 
 - `Appraisal`: `fair_low_usd`, `fair_high_usd`, `target_usd`, `walk_away_usd`, `rationale`, `sources[]` (sheet sections).
-- `BuyerMove`: `message` (≤ 500), `action` ∈ {offer, accept, probe, walk_away}, `offer_usd | null`.
-- `BuyerReport`: `outcome`, `final_price_usd | null`, `floor_estimate_usd`, `confidence` ∈ [0,1].
+- `BuyerMove`: `message` (≤ 500 after the guard), `action` ∈ {offer, accept, probe, walk_away}, `offer_usd | null`. The guard (code) enforces the persona's numbers before anything is sent.
+- `BuyerReport` (LLM): `floor_estimate_usd`, `confidence` ∈ [0,1], `reasoning`. The `outcome` and `final_price_usd` are set by code from the seller's structured turns, never by the model; code also caps the estimate at the lowest price the dealer quoted.
 - `Persona` (YAML): `id`, `anchor_ratio`, `max_raise_ratio_per_turn`, `patience_turns`, `walk_away_ratio`, `tactics[]` (attack category ids), `style`.
 
 ## 3. REST API (api service)

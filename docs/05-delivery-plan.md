@@ -77,7 +77,7 @@ Budget: **~73 h planned** of the 64–80 h available. Planned hours stay below t
 | Task | h |
 |------|---|
 | Persona YAMLs: stingy, hurried, manipulator (tactics linked to attack categories) | 1.0 |
-| `StateGraph`: fetch_listing → appraise (MCP `catalog` scope via langchain-mcp-adapters) → plan_move (`BuyerMove`) → **guard** (code: never above walk-away, offers non-decreasing) → send (A2A) → observe (DataPart) → route → report (floor estimate) | 3.0 |
+| `StateGraph`: fetch_listing → appraise (MCP `catalog` scope via the MCP SDK client, [ADR-0012](adr/0012-buyer-mcp-sdk-client.md)) → plan_move (`BuyerMove`) → **guard** (code: never above walk-away, offers non-decreasing) → send (A2A) → observe (DataPart) → route → report (floor estimate) | 3.0 |
 | CLI: create a game through the api, run, print the transcript and outcome | 1.0 |
 | Tests: guard unit tests, graph test with a fake chat model and a mocked seller | 1.5 |
 | Langfuse `CallbackHandler`, `langfuse_session_id = game_id` | 1.0 |

@@ -37,7 +37,7 @@ haggle-garage/
 | Module | May import | Must not import |
 |--------|-----------|-----------------|
 | `haggle-core` | pydantic, SQLAlchemy, httpx, a2a-sdk (client) | ADK, LangGraph, the MCP server SDK |
-| `haggle-buyer` | core, LangGraph, langchain-mcp-adapters | seller, mcp |
+| `haggle-buyer` | core, LangGraph, langchain-google-genai, MCP SDK client | seller, mcp |
 | `haggle-seller` | core, google-adk | mcp, buyer (it talks to the MCP over the protocol) |
 | `haggle-mcp` | core, mcp SDK, pgvector | seller, buyer |
 | `haggle-api` | core, buyer, FastAPI | seller, mcp (A2A only) |
@@ -121,10 +121,10 @@ On every PR and on `main`:
 | `google-adk` | 2.11.0 (2026-10-02) | Requires `mcp >=1.24,<3`, `a2a-sdk >=0.3.4,<2` (extra `[a2a]`), `google-genai >=2.19,<3`. A2A is experimental. |
 | `a2a-sdk` | 1.2.2 (2026-10-05) | Spec 1.0 + 0.3 compat. Extras `[http-server]`, `[fastapi]`. |
 | `mcp` | 2.3.0 (2026-10-02) | v2: `FastMCP` → `MCPServer`, spec 2026-07-28, serves 2025-11-25 clients too. |
-| `langgraph` | 1.2.14 (2026-10-06) | — |
-| `langchain-mcp-adapters` | 0.3.2 (2026-08-06) | `MultiServerMCPClient`, transport `http`/`streamable_http`, custom headers. |
+| `langgraph` | 1.2.14 (2026-10-06) | With `langchain-core` 1.6.9, `langchain-google-genai` 4.4.0 (week 5). |
+| `langchain-mcp-adapters` | 0.3.2 (2026-08-06) | **Not used:** requires `mcp<2` ([ADR-0012](adr/0012-buyer-mcp-sdk-client.md)). |
 | `langgraph-api` | ≥ 0.4.21 for A2A | Not used in the MVP (ADR-0006). |
-| `langfuse` | current major **[unverified]** | ADK via `openinference-instrumentation-google-adk`. LangGraph via `langfuse.langchain.CallbackHandler`. |
+| `langfuse` | 4.15.6 (4.17 needs OTel ≥ 1.45; ADK pins ≤ 1.42.1) | ADK via `openinference-instrumentation-google-adk`. LangGraph via `langfuse.langchain.CallbackHandler`, which also needs the `langchain` package. |
 | FastAPI, SQLAlchemy, Alembic, pgvector-python, mypy | **0.141.1** (W2: capped by ADK's OpenTelemetry pin), **2.1.4** with the `[asyncio]` extra, 1.20.0, 0.5.0, **2.4.0** | Pinned in `uv.lock`. |
 | Terraform `hashicorp/google` | 8.6.0 (W1) | Pinned in `.terraform.lock.hcl`. |
 

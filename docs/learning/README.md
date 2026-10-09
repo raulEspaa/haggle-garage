@@ -11,6 +11,7 @@ choice in an interview.
 | 2 | [week-02-tracer-bullet-and-policy.md](week-02-tracer-bullet-and-policy.md) | ADK ↔ MCP ↔ A2A spike, Boulware policy + Hypothesis, MCP server v2, contract snapshots |
 | 3 | [week-03-seller-agent-and-rag.md](week-03-seller-agent-and-rag.md) | RAG with pgvector, ADK seller with 3 levels, callbacks as guards, two fail-open bugs, Langfuse |
 | 4 | [week-04-api-and-web-ui.md](week-04-api-and-web-ui.md) | FastAPI public API, demo limits, single flight, strict CSP page, six bugs found only in Docker |
+| 5 | [week-05-buyer-agent-langgraph.md](week-05-buyer-agent-langgraph.md) | LangGraph buyer: state, reducers, structured output, code guard, personas, one trace across 3 processes |
 
 How to use them:
 
