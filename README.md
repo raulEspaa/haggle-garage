@@ -16,7 +16,7 @@ make db-up              # Postgres 17 + pgvector in Docker
 cp .env.example .env
 make migrate seed       # schema + 3 iconic cars (Camaro Z/28, Challenger R/T, Grand National)
 make check              # lint, types, tests
-make ingest             # embed the model sheets (needs GOOGLE_API_KEY in .env)
+make ingest             # embed the model sheets (Gemini on Vertex AI: gcloud ADC, see .env.example)
 docker compose up --build   # mcp + seller + api: play at http://127.0.0.1:8080
 ```
 

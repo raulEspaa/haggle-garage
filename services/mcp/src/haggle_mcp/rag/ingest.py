@@ -1,6 +1,6 @@
 """CLI: embed db/sheets/*.md with Gemini and store them in Postgres.
 
-    uv run haggle-ingest                 # HAGGLE_DATABASE_URL + GOOGLE_API_KEY from .env
+    uv run haggle-ingest                 # HAGGLE_DATABASE_URL + Gemini backend vars from .env
     uv run haggle-ingest --dir db/sheets
 
 Idempotent: re-running replaces the chunks of each sheet (cost: a few thousand tokens).
@@ -29,7 +29,7 @@ async def _run(directory: Path) -> None:
 
 
 def main(argv: list[str] | None = None) -> None:
-    load_dotenv()  # GOOGLE_API_KEY is read by the google-genai client, not by our settings
+    load_dotenv()  # the Gemini backend vars are read by the google-genai client, not our settings
     parser = argparse.ArgumentParser(description="Embed model sheets into pgvector.")
     parser.add_argument("--dir", type=Path, default=Path("db/sheets"))
     asyncio.run(_run(parser.parse_args(argv).dir))

@@ -21,9 +21,9 @@ class BuyerSettings(BaseSettings):
         validation_alias=AliasChoices("HAGGLE_BUYER_MCP_TOKEN", "HAGGLE_MCP_CATALOG_TOKEN"),
     )
     turn_cap: int = 12
-    # Gemini's free tier allows 15 requests/minute per model, SHARED by buyer and seller (same
-    # key). The buyer takes at most this many, leaving the rest to the seller.
-    max_requests_per_minute: float = 5.0
+    # Client-side ceiling on the buyer's model calls. On the Gemini API free tier (15 requests
+    # per minute, shared with the seller) set it to 5. Vertex AI has no fixed per-key limit.
+    max_requests_per_minute: float = 30.0
 
 
 @lru_cache

@@ -37,7 +37,7 @@ class GeminiEmbedder:
     """
 
     def __init__(self, client: genai.Client | None = None, model: str = GEMINI_EMBEDDING_MODEL):
-        self._client = client or genai.Client()  # reads GOOGLE_API_KEY
+        self._client = client or genai.Client()  # Vertex AI (ADC) or API key, from env vars
         self._model = model
         self._config = types.EmbedContentConfig(output_dimensionality=EMBEDDING_DIMS)
 

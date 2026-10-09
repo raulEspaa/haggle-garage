@@ -50,7 +50,7 @@ test: ## Run tests (DB tests are skipped if Postgres is down)
 test-db: ## Run tests and FAIL if Postgres is not reachable (what CI does)
 	HAGGLE_REQUIRE_DB=1 uv run pytest --cov=haggle_core --cov=haggle_api
 
-test-llm: ## Tests that call Gemini (costs tokens; needs GOOGLE_API_KEY in .env). Never in CI
+test-llm: ## Tests that call Gemini (costs tokens; needs a Gemini backend in .env). Never in CI
 	set -a && . ./.env && set +a && HAGGLE_REQUIRE_DB=1 uv run pytest -m llm -v
 
 ingest: ## Embed db/sheets/*.md into pgvector (Gemini embeddings)

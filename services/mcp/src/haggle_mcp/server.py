@@ -23,7 +23,7 @@ from starlette.responses import JSONResponse
 
 from haggle_core.contracts import CloseResultOut, OfferDecisionOut, SheetHitOut, SheetResultsOut
 from haggle_core.db.session import create_engine, create_session_factory
-from haggle_core.settings import get_settings
+from haggle_core.settings import gemini_configured, get_settings
 from haggle_core.tracing import TraceContextMiddleware, observation, setup_langfuse
 from haggle_mcp.auth import GAME_HEADER, ClientScope, TokenAuthMiddleware, scope_from_headers
 from haggle_mcp.rag.embeddings import Embedder, GeminiEmbedder
@@ -147,7 +147,7 @@ def build_app(
     settings = settings or get_mcp_settings()
     setup_langfuse()  # no-op without LANGFUSE_* keys
     sessions = create_session_factory(create_engine(database_url))
-    if embedder is None and os.environ.get("GOOGLE_API_KEY"):
+    if embedder is None and gemini_configured():
         embedder = GeminiEmbedder()
     retriever = SheetRetriever(sessions, embedder) if embedder is not None else None
     mcp = build_server(NegotiationService(sessions), settings, retriever)
@@ -183,7 +183,7 @@ def build_app(
 
 def run() -> None:
     """`uv run haggle-mcp`: serve on 127.0.0.1:8100 (the container overrides host and port)."""
-    load_dotenv()  # local convenience: GOOGLE_API_KEY and HAGGLE_MCP_* from .env
+    load_dotenv()  # local convenience: Gemini backend settings and HAGGLE_MCP_* from .env
     uvicorn.run(
         build_app(),
         host=os.environ.get("HOST", "127.0.0.1"),

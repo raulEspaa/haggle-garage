@@ -5,6 +5,7 @@ Every variable is prefixed with `HAGGLE_`, e.g. `HAGGLE_DATABASE_URL`.
 A local `.env` file is read for convenience; it is gitignored and never used in production.
 """
 
+import os
 from functools import lru_cache
 from typing import Literal
 
@@ -32,3 +33,17 @@ class Settings(BaseSettings):
 def get_settings() -> Settings:
     """Build settings once per process (env vars are read at first call)."""
     return Settings()
+
+
+def gemini_configured() -> bool:
+    """Can the google-genai SDK (used by ADK, LangChain and our embedder) reach Gemini?
+
+    Two backends, chosen by environment variables the SDK reads itself (ADR-0013):
+    * Vertex AI: GOOGLE_GENAI_USE_VERTEXAI=true + GOOGLE_CLOUD_PROJECT (+ GOOGLE_CLOUD_LOCATION),
+      authenticated with ADC (`gcloud auth application-default login`, or the Cloud Run
+      service account). No API key.
+    * Gemini API (AI Studio): GOOGLE_API_KEY.
+    """
+    if os.environ.get("GOOGLE_GENAI_USE_VERTEXAI", "").lower() in ("1", "true"):
+        return bool(os.environ.get("GOOGLE_CLOUD_PROJECT"))
+    return bool(os.environ.get("GOOGLE_API_KEY") or os.environ.get("GEMINI_API_KEY"))

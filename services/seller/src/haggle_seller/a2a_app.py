@@ -62,7 +62,7 @@ def build_app(settings: SellerSettings | None = None) -> Starlette:
 
 def run() -> None:
     """`uv run haggle-seller`: A2A server on 127.0.0.1:8200 (needs the MCP server running)."""
-    load_dotenv()  # GOOGLE_API_KEY, LANGFUSE_* and HAGGLE_* from .env
+    load_dotenv()  # Gemini backend vars, LANGFUSE_* and HAGGLE_* from .env
     os.environ.setdefault("ADK_SUPPRESS_A2A_EXPERIMENTAL_FEATURE_WARNINGS", "true")
     logging.basicConfig(level=logging.INFO)
     settings = get_seller_settings()

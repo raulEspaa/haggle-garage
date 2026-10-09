@@ -3,6 +3,19 @@
 #   docker compose up --build api
 name: haggle
 
+# Vertex AI auth inside containers (ADR-0013): your gcloud ADC file, mounted read-only. It is
+# mode 600, so these services run with your UID (HOST_UID, default 1000) to be able to read it.
+# Missing file = clear error (create_host_path: false), never an empty directory.
+x-gcloud-adc: &gcloud-adc
+  user: "${HOST_UID:-1000}"
+  volumes:
+    - type: bind
+      source: ${HOME}/.config/gcloud/application_default_credentials.json
+      target: /gcloud/adc.json
+      read_only: true
+      bind:
+        create_host_path: false
+
 services:
   db:
     # Same Postgres major version as Neon, with the pgvector extension preinstalled.
@@ -23,10 +36,15 @@ services:
       retries: 30
 
   mcp:
+    <<: *gcloud-adc
     build:
       context: .
       dockerfile: services/mcp/Dockerfile
+    env_file: # Gemini backend vars (embeddings for lookup_model_sheet), LANGFUSE_*
+      - path: .env
+        required: false
     environment:
+      GOOGLE_APPLICATION_CREDENTIALS: /gcloud/adc.json
       HAGGLE_ENV: local
       HAGGLE_DATABASE_URL: postgresql+psycopg://haggle:haggle@db:5432/haggle
       HAGGLE_MCP_BACKEND: local
@@ -41,14 +59,16 @@ services:
         condition: service_healthy
 
   seller:
+    <<: *gcloud-adc
     build:
       context: .
       dockerfile: services/seller/Dockerfile
-    # GOOGLE_API_KEY and LANGFUSE_* come from your local .env (never committed).
+    # Gemini backend vars and LANGFUSE_* come from your local .env (never committed).
     env_file:
       - path: .env
         required: false
     environment:
+      GOOGLE_APPLICATION_CREDENTIALS: /gcloud/adc.json
       HAGGLE_ENV: local
       HAGGLE_DATABASE_URL: postgresql+psycopg://haggle:haggle@db:5432/haggle
       HAGGLE_SELLER_MCP_URL: http://mcp:8100/mcp

@@ -1,7 +1,6 @@
 """RAG tests: sheet parsing and hygiene (pure), storage and search (Postgres, fake embedder),
 and retrieval quality with real Gemini embeddings (marked `llm`, never in CI)."""
 
-import os
 import re
 from pathlib import Path
 
@@ -11,6 +10,7 @@ from sqlalchemy import Engine, text
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from haggle_core.seed import load_seed
+from haggle_core.settings import gemini_configured
 from haggle_mcp.rag.embeddings import FakeEmbedder, GeminiEmbedder
 from haggle_mcp.rag.sheets import load_sheets, parse_sheet
 from haggle_mcp.rag.store import SheetRetriever, ingest_sheets
@@ -105,8 +105,8 @@ async def test_retrieval_quality_with_gemini_embeddings(
     session_factory: async_sessionmaker[AsyncSession],
 ) -> None:
     """hit@3 >= 0.9 on the dealer-specific question set (docs/06-evaluation-plan.md §2.3)."""
-    if not os.environ.get("GOOGLE_API_KEY"):
-        pytest.skip("GOOGLE_API_KEY not set")
+    if not gemini_configured():
+        pytest.skip("no Gemini backend configured (Vertex AI or GOOGLE_API_KEY)")
     embedder = GeminiEmbedder()
     await ingest_sheets(session_factory, load_sheets(SHEETS_DIR), embedder)
     retriever = SheetRetriever(session_factory, embedder)

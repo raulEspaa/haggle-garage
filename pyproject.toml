@@ -67,6 +67,9 @@ filterwarnings = [
   # experimental-feature notices. Our own code must stay warning-free.
   "ignore:MCPTool class is deprecated:DeprecationWarning:google.adk",
   "ignore::UserWarning:google.adk",
+  # ADK prefers GOOGLE_GENAI_USE_ENTERPRISE, but langchain-google-genai only reads
+  # GOOGLE_GENAI_USE_VERTEXAI (checked 2026-10-09), so we keep the old name (ADR-0013).
+  "ignore:GOOGLE_GENAI_USE_VERTEXAI is deprecated:DeprecationWarning",
 ]
 markers = [
   "db: needs a running Postgres (make db-up). Skipped when unreachable unless HAGGLE_REQUIRE_DB=1.",
