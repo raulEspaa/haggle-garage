@@ -637,6 +637,7 @@ source = { virtual = "." }
 dev = [
     { name = "alembic" },
     { name = "haggle-api" },
+    { name = "haggle-buyer" },
     { name = "haggle-core" },
     { name = "haggle-mcp" },
     { name = "haggle-seller" },
@@ -657,6 +658,7 @@ dev = [
 dev = [
     { name = "alembic", specifier = ">=1.20.0" },
     { name = "haggle-api", editable = "services/api" },
+    { name = "haggle-buyer", editable = "services/buyer" },
     { name = "haggle-core", editable = "packages/core" },
     { name = "haggle-mcp", editable = "services/mcp" },
     { name = "haggle-seller", editable = "services/seller" },
