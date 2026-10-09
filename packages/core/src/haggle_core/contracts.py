@@ -8,9 +8,36 @@ version and update the snapshot test.
 from enum import StrEnum
 from typing import Literal
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 
 from haggle_core.domain import Decision
+
+
+class SellerIntent(StrEnum):
+    GREET = "greet"
+    INFORM = "inform"
+    COUNTER = "counter"
+    ACCEPT = "accept"
+    CLOSE = "close"
+    REJECT = "reject"
+    REFUSE = "refuse"
+    END = "end"
+
+
+PRICED_INTENTS = frozenset({SellerIntent.COUNTER, SellerIntent.ACCEPT, SellerIntent.CLOSE})
+
+
+class SellerTurn(BaseModel):
+    """The seller LLM's structured answer (ADK output_schema). Code validates it before it is
+    sent: the model talks, code decides (ADR-0007)."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    message: str = Field(max_length=1200, description="What you say to the buyer.")
+    intent: SellerIntent = Field(description="What this message does in the negotiation.")
+    price_usd: int | None = Field(
+        default=None, description="The single price this message quotes or accepts, else null."
+    )
 
 
 class OfferReason(StrEnum):
