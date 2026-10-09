@@ -25,8 +25,8 @@ def create_app() -> FastAPI:
     settings = get_settings()
     app = FastAPI(title="Haggle Garage API", version="0.1.0")
 
-    @app.get("/healthz", tags=["ops"])
-    async def healthz() -> Health:
+    @app.get("/health", tags=["ops"])
+    async def health() -> Health:
         # Liveness only: it must not touch the database. A sleeping Neon database
         # should not make Cloud Run think the container is broken.
         return Health(version=settings.git_sha)

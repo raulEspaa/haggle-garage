@@ -18,7 +18,7 @@ Contracts are what other components (and future you) depend on. Change them deli
 
 - **Transport:** Streamable HTTP at `POST /mcp`. Spec revision **2026-07-28** (stateless: no `initialize`, no `Mcp-Session-Id`). The SDK v2 also answers **2025-11-25** clients that still do the `initialize` handshake **[verified 2026-10-08]**. That matters because ADK's `McpToolset` may speak the older revision ([spike S1]).
 - **SDK:** `mcp` Python SDK **2.x** (`from mcp.server import MCPServer`; `FastMCP` was renamed in v2.0.0, 2026-07-28) **[verified 2026-10-08]**.
-- **Health:** `GET /healthz` → `{"status":"ok","backend":"home|cloud","version":"<git_sha>"}`. Protected like everything else at the edge.
+- **Health:** `GET /health` → `{"status":"ok","backend":"home|cloud","version":"<git_sha>"}`. Protected like everything else at the edge.
 
 ### 1.2 Authentication and trusted headers
 
@@ -295,7 +295,7 @@ Base path `/api`. JSON. Errors use **RFC 9457 Problem Details** (`application/pr
 |--------|------|---------|--------|
 | GET | `/` | Game page | — |
 | GET | `/about` | How it works + privacy note | — |
-| GET | `/healthz` | Liveness (also used to pre-warm) | — |
+| GET | `/health` | Liveness (also used to pre-warm) | — |
 | GET | `/api/levels` | Level descriptions | — |
 | GET | `/api/cars` | Public listings (no policy data) | — |
 | GET | `/api/cars/{car_id}` | Listing detail | — |

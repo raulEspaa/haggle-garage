@@ -91,7 +91,7 @@ Likelihood (L) and impact (I) are rated H/M/L.
 
 | ID | Threat | STRIDE | L/I | Mitigations | Verified by |
 |----|--------|--------|-----|-------------|-------------|
-| T17 | Direct attacks on the home endpoint | Spoofing, DoS | H (scanners) / M | **No inbound ports** (CGNAT + outbound tunnel). Cloudflare Access Service Auth at the edge. App token. Only `/mcp` and `/healthz` are routed. | `curl` without token → Access denial page |
+| T17 | Direct attacks on the home endpoint | Spoofing, DoS | H (scanners) / M | **No inbound ports** (CGNAT + outbound tunnel). Cloudflare Access Service Auth at the edge. App token. Only `/mcp` and `/health` are routed. | `curl` without token → Access denial page |
 | T18 | **Lateral movement** from a compromised MCP into the LAN or Proxmox | Elevation | L/H | **Unprivileged LXC**, no host mounts, no nesting. Proxmox firewall **egress allow-list** (Cloudflare, Neon, Gemini API, OS mirrors) and **deny RFC 1918** (LAN). Separate VLAN if your router supports it. Dedicated LXC, nothing else in it. | `nc`/`curl` to LAN IPs from inside the LXC must fail |
 | T19 | Vulnerable dependency in the MCP or the OS | Elevation | M/M | `uv.lock` pinned, Dependabot alerts, `unattended-upgrades`. systemd hardening (`NoNewPrivileges`, `ProtectSystem=strict`, `PrivateTmp`, dedicated user). | Checklist §6 |
 | T20 | Theft of tunnel or Access credentials | Spoofing | L/M | Files mode 600, owned by a service user. Access service token ≠ tunnel token. Rotation documented. Expiry alerts. | Checklist |
@@ -136,7 +136,7 @@ Worst case per month = the prepaid credit (default 10 USD).
 - [ ] No SSH server. Admin via `pct enter` from the host, which you reach over Tailscale.
 - [ ] Secrets in `/etc/haggle/*.env`, mode 600.
 - [ ] Access policy action = **Service Auth**. Token expiry noted in your calendar.
-- [ ] Verification: `curl https://mcp.<domain>/healthz` without headers → blocked by Access. From inside the CT, `curl 192.168.x.x` → fails.
+- [ ] Verification: `curl https://mcp.<domain>/health` without headers → blocked by Access. From inside the CT, `curl 192.168.x.x` → fails.
 
 ## 7. Accepted residual risks
 

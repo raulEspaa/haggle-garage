@@ -248,7 +248,7 @@ make db-up && make migrate seed && make test-db
 Expected: **26 passed**.
 
 ```bash
-make docker-api && docker compose up -d api && curl -s localhost:8080/healthz
+make docker-api && docker compose up -d api && curl -s localhost:8080/health
 ```
 
 Expected: `{"status":"ok","service":"api","version":"<git sha>"}`. Stop it with

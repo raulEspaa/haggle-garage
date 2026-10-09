@@ -16,7 +16,7 @@ make db-up              # Postgres 17 + pgvector in Docker
 cp .env.example .env
 make migrate seed       # schema + 3 fictional cars
 make check              # lint, types, tests
-make api                # http://127.0.0.1:8080/healthz
+make api                # http://127.0.0.1:8080/health
 ```
 
 ## Repository map

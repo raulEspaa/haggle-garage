@@ -198,7 +198,7 @@ Usage: `uv run haggle-seed`. The command exists because of `[project.scripts]` i
 **File:** [`services/api/src/haggle_api/main.py`](../../services/api/src/haggle_api/main.py)
 
 - **App factory** `create_app()`: every test gets a fresh app. No shared global state.
-- `/healthz` is a **liveness** probe: "is the process alive?". It deliberately does **not** query
+- `/health` is a **liveness** probe: "is the process alive?". It deliberately does **not** query
   the database. If Neon is asleep, Cloud Run must not kill healthy containers. A *readiness*
   check ("can I serve traffic?") is a different thing, added later if needed.
 - **Host binding:** `uv run haggle-api` listens on `127.0.0.1` (not visible to your LAN). The
@@ -206,6 +206,22 @@ Usage: `uv run haggle-seed`. The command exists because of `[project.scripts]` i
   `S104` would flag a hardcoded `0.0.0.0`. Here the choice is explicit per environment.
 - `PORT` comes from the environment because **Cloud Run injects it**.
 - FastAPI generates OpenAPI for free: `GET /openapi.json`, and `/docs` for the Swagger UI.
+
+> 🪤 **Real bug found by the first deploy: why it's `/health` and not `/healthz`.**
+> The endpoint was first called `/healthz` (a Kubernetes convention). Tests passed, Docker
+> passed, and on Cloud Run it returned a **Google HTML 404 in 0.1 s**. FastAPI's own 404 is
+> JSON, so the request never reached the container. Cloud Run's front end **reserves some paths
+> ending in `z`**, and the [docs](https://docs.cloud.google.com/run/docs/issues) recommend
+> avoiding *all* of them.
+>
+> Debugging method worth remembering:
+> 1. Compare the error with your app's error format. HTML vs JSON told us *who* answered.
+> 2. Probe another path (`/openapi.json` worked) to prove the container itself was fine.
+> 3. Only then search the platform docs.
+>
+> The fix was renaming the endpoint, plus a regression test, `test_no_route_ends_in_z`, so it
+> can't come back. This is the whole argument for a walking skeleton: this bug is invisible
+> until you deploy.
 
 ---
 
@@ -293,7 +309,7 @@ Multi-stage build, following uv's official Docker guide:
      with `--no-editable`: real wheels inside `.venv`, so the source tree isn't needed at
      runtime.
 2. **runtime** stage: a clean `python:3.13-slim-trixie` + the `.venv`. **Non-root user**. The
-   git SHA is baked in as `HAGGLE_GIT_SHA`, so `/healthz` tells you which build is running.
+   git SHA is baked in as `HAGGLE_GIT_SHA`, so `/health` tells you which build is running.
 
 `.dockerignore` keeps `.git`, `.env`, tests, docs and infra out of the build context. Smaller
 builds, and no secrets in layers.
@@ -302,7 +318,7 @@ builds, and no secrets in layers.
 trivial password should not be reachable from your LAN.
 
 > ⏳ **Not yet verified:** the Docker build itself (no Docker on this machine). First thing to run
-> once installed: `make docker-api && docker compose up api`, then `curl localhost:8080/healthz`.
+> once installed: `make docker-api && docker compose up api`, then `curl localhost:8080/health`.
 
 ---
 
@@ -374,7 +390,7 @@ apt repositories (all verified for Ubuntu 26.04), plus git identity, gh and gclo
 
 ```bash
 make db-up && make migrate seed && make test-db     # expect 26 passed
-make docker-api && docker compose up api            # then: curl localhost:8080/healthz
+make docker-api && docker compose up api            # then: curl localhost:8080/health
 ```
 
 ### 12.2 Accounts and guardrails (≈ 45 min)
@@ -415,7 +431,7 @@ cd ../.. && make docker-api
 SHA=$(git rev-parse --short HEAD)
 docker tag haggle-api:$SHA $REPO/api:$SHA && docker push $REPO/api:$SHA
 cd infra/terraform && terraform apply -var="api_image=$REPO/api:$SHA"
-curl "$(terraform output -raw api_url)/healthz"     # {"status":"ok","service":"api","version":"<sha>"}
+curl "$(terraform output -raw api_url)/health"     # {"status":"ok","service":"api","version":"<sha>"}
 
 # Definition of done: prove the stack is reproducible
 terraform destroy && terraform apply -var="api_image=$REPO/api:$SHA"

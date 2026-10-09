@@ -144,7 +144,7 @@ sequenceDiagram
     loop until deal / walk away / turn cap
         B->>S: A2A SendMessage (contextId = game_id)
         alt first turn of the game
-            S->>MH: GET /healthz (timeout 1.5 s)
+            S->>MH: GET /health (timeout 1.5 s)
             MH--xS: timeout
             S->>S: games.mcp_backend = cloud (sticky for this game)
         end
@@ -263,7 +263,7 @@ There is no staging. For a one-person demo, `local` and `prod` are enough. Terra
 |---------|-----------|-----------|
 | Home MCP down or tunnel down | health check at the game's first turn, tool error mid-game | Game sticks to Cloud Run MCP. Mid-game: one apology turn, then switch. |
 | Neon cold start (scale-to-zero after 5 min) | latency on first query | Accept the latency (expected under 1 s, [unverified]). The page shows "warming up". |
-| Seller cold start (ADK import is heavy) | first-request latency | Startup CPU boost. The page pings `/healthz` on load to pre-warm. min-instances = 0 to keep cost at 0. |
+| Seller cold start (ADK import is heavy) | first-request latency | Startup CPU boost. The page pings `/health` on load to pre-warm. min-instances = 0 to keep cost at 0. |
 | Gemini 429 / 5xx | SDK error | One retry with backoff, then "the dealer stepped out, try again" (turn not consumed). |
 | Daily soft budget exhausted | api check before forwarding | 503 + friendly "demo closed until tomorrow" page. |
 | Provider hard cap hit | 429 from Gemini | Same as above. Budget alert email. |

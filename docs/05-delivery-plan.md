@@ -21,9 +21,9 @@ Budget: **~73 h planned** of the 64–80 h available. Planned hours stay below t
 | `compose.yaml` with `pgvector/pgvector`. SQLAlchemy models + Alembic initial migration (all tables in [03 §4](03-contracts.md#4-data-model)) | 2.0 |
 | Seed script: 3 fictional cars + pricing policies | 1.0 |
 | Accounts and guardrails: GCP project + **budget alerts 50/90/100%**. AI Studio `haggle-dev` (free) and `haggle-prod` (prepay 10 USD + spend cap). Langfuse Cloud EU. Neon project. Calendar reminder: trial ends at day 90. | 1.5 |
-| Terraform bootstrap: GCS state bucket, Artifact Registry (cleanup policy), Cloud Run "hello" (`/healthz`) | 2.5 |
+| Terraform bootstrap: GCS state bucket, Artifact Registry (cleanup policy), Cloud Run "hello" (`/health`) | 2.5 |
 
-- **Deliverable:** green CI. `docker compose up db` + `alembic upgrade head` + seed works. A public `…run.app/healthz` created by `terraform apply`.
+- **Deliverable:** green CI. `docker compose up db` + `alembic upgrade head` + seed works. A public `…run.app/health` created by `terraform apply`.
 - **Done when:** a PR with a failing test is blocked by CI, `terraform destroy && terraform apply` recreates the service, and a test budget alert email has arrived.
 - **You learn:** uv/pyproject (≈ .sln/.csproj), ruff, pytest (≈ xUnit), async SQLAlchemy (≈ EF Core), Alembic (≈ EF migrations), Terraform basics, Cloud Run.
 - *If Terraform eats more than 3 h: deploy hello-world with `gcloud run deploy` and move Terraform to Week 7.*
@@ -34,7 +34,7 @@ Budget: **~73 h planned** of the 64–80 h available. Planned hours stay below t
 |------|---|
 | **Spike S1–S3, S6** ([02 §11](02-architecture.md#11-spikes-de-risk-before-building-on-them)): dummy MCP tool (SDK v2) ← ADK agent with `McpToolset(header_provider)` ← `to_a2a(runner=DatabaseSessionService)` ← a2a-sdk client, 2 messages with the same `contextId`. Write findings into ADR-0001/0006/0008. | 2.5 |
 | Policy engine as pure functions (Boulware target, decide, rounding) + unit tests + **Hypothesis** property tests for invariants I1–I5 | 2.0 |
-| MCP server: `evaluate_offer`, `close_deal` (events, deals, idempotency, generic reasons), scoped token middleware, `/healthz` | 2.5 |
+| MCP server: `evaluate_offer`, `close_deal` (events, deals, idempotency, generic reasons), scoped token middleware, `/health` | 2.5 |
 | Contract tests: snapshot of `tools/list` schemas. Tool calls through the SDK `Client` in-process | 1.0 |
 | Write model sheets #1 and #2 (background task) | 1.0 |
 
