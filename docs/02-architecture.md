@@ -79,8 +79,9 @@ Where each guard lives (component · mechanism):
 | `evaluate_offer` visible to the model | — | — | ● | seller · toolset filter per level ([spike]) |
 | Offer-in-message check: the amount sent to `evaluate_offer` must appear in the buyer's last message | — | — | ● | seller · `before_tool_callback` |
 | One `evaluate_offer` per buyer turn | — | — | ● | mcp · `negotiation_events` count |
-| Price guard: `SellerTurn.price_usd` must equal the last code-issued number | — | — | ● | seller · `after_model_callback` → deterministic fallback template |
-| Output leak filter: numbers within ±5% of the floor that code did not issue → block | — | ● | ● | seller · `after_model_callback` |
+| Price guard: `SellerTurn.price_usd` must equal a code-issued number | — | — | ● | seller · `_review_reply` → deterministic fallback template |
+| Fail closed if the MCP tools did not load (ADK otherwise runs the agent with no tools) | — | — | ● | seller · `before_model_callback` |
+| Output leak filter: numbers within ±5% of the floor not issued by code → block (L2). At L3 the seller cannot know the floor, so any price-like number not issued by code is blocked instead | — | ● | ● | seller · `_review_reply`, applied in `after_model` **and** on `set_model_response` (Week 3: the Gemini API always uses the latter) |
 | System-prompt canary token → block | ● (log only) | ● | ● | seller · `after_model_callback` |
 | `close_deal` requires price ≥ floor | ● | ● | ● | mcp |
 | `close_deal` requires a matching prior **accept** (L3), or the price present in the buyer's last message (L1–L2) | ● | ● | ● | mcp (L3) / seller `before_tool_callback` (L1–L2) |

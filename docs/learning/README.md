@@ -9,6 +9,7 @@ choice in an interview.
 | 0 | [setup-tools.md](setup-tools.md) | Install and configure Docker, Terraform, gcloud, gh (Ubuntu 26.04) |
 | 1 | [week-01-foundations.md](week-01-foundations.md) | uv workspace, SQLAlchemy + Alembic, tests, quality gates, Docker, CI, Terraform |
 | 2 | [week-02-tracer-bullet-and-policy.md](week-02-tracer-bullet-and-policy.md) | ADK ↔ MCP ↔ A2A spike, Boulware policy + Hypothesis, MCP server v2, contract snapshots |
+| 3 | [week-03-seller-agent-and-rag.md](week-03-seller-agent-and-rag.md) | RAG with pgvector, ADK seller with 3 levels, callbacks as guards, two fail-open bugs, Langfuse |
 
 How to use them:
 

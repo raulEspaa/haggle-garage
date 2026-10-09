@@ -38,6 +38,11 @@ Status: **V** = verified from an official source · **P** = partially verified (
 | SQLAlchemy 2.1 | `greenlet` no longer installed by default: the async engine needs `sqlalchemy[asyncio]` | V | runtime `ImportError` |
 | MCP SDK v2 server | `MCPServer.middleware` marked *provisional*. `Context.headers` exists ("never treat one as an identity assertion"). `server/discover` returned *Method not found* in stateless HTTP mode (2.3.0) | V | installed source, spike |
 | a2a-sdk 1.x | Models are protobuf (`a2a.types.a2a_pb2`). Helpers in `a2a.helpers` (`new_text_message(text, context_id=...)`, `get_artifact_text`) | V | installed source |
+| ADK output_schema + tools | Native only when the backend is **Vertex AI** (`gemini_output_schema_and_tools`). On the Gemini API ADK adds a `set_model_response` tool and the final answer arrives as a tool call | V | installed source `google/adk/models/_capabilities.py`, Langfuse traces |
+| ADK McpToolset failure | If the toolset fails to load (e.g. HTTP 401 while listing tools), ADK logs an ERROR and runs the agent **without** those tools | V | seller log, week 3 |
+| gemini-embedding-2 via google-genai | A list of strings in one `embed_content` call is ONE multimodal content → one vector. Embed one document per call | V | runtime (strict zip), week 3 |
+| Langfuse public API | `GET /api/public/traces` is legacy and returns 410 for orgs created on/after 2026-09-16. Use `GET /api/public/v2/observations?fromStartTime=&toStartTime=` | V | API error message, [observations API](https://langfuse.com/docs/api-and-data-platform/features/observations-api) |
+| Langfuse SDK / ADK instrumentor | langfuse 4.15.6, openinference-instrumentation-google-adk 1.0.3; ADK session id becomes the Langfuse `sessionId` automatically | V | `uv.lock`, observations API |
 | Langfuse self-host major | v4 | P | [Langfuse self-hosting](https://langfuse.com/self-hosting) |
 
 ## 3. ADK APIs used by the design

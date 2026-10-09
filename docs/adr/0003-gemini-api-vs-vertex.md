@@ -48,6 +48,14 @@ For a public toy with an anonymous audience, **a hard cap beats keyless auth**. 
 - **Calendar item:** the GCP Free Trial ends 90 days after signup. Upgrade before then or Cloud Run stops.
 - `gemini-3.8-flash` promotional pricing ends 2026-12-31 (it doubles on 2027-01-01). The judge cost goes up after the project ends, which is fine.
 
+## Week 3 finding
+
+On the Gemini API backend, ADK cannot combine tools with a response schema natively (it does
+only on Vertex AI). It adds an internal `set_model_response` tool and the model delivers its
+final JSON by calling it. Output guards must therefore inspect that tool call too, not only text
+responses (`haggle_seller/agent.py::_review_reply`). Switching to Vertex would change the path,
+and both are tested (`ScriptedLlm(native_schema=...)`).
+
 ## Revisit if
 
 - Agent Platform gets a documented hard project cap for model calls, or you want to demonstrate IAM-only auth: switch with one env var.
