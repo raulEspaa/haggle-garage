@@ -3,7 +3,7 @@
 GIT_SHA := $(shell git rev-parse --short HEAD 2>/dev/null || echo dev)
 
 .PHONY: help sync fmt lint types test test-db check db-up db-down db-reset migrate seed api \
-        docker-api docker-mcp mcp spike precommit-install tf-check doctor test-llm ingest
+        docker-api docker-mcp mcp seller play spike precommit-install tf-check doctor test-llm ingest
 
 help: ## List available targets
 	@grep -E '^[a-zA-Z_-]+:.*?## ' $(MAKEFILE_LIST) | \
@@ -80,6 +80,12 @@ api: ## Run the API locally with auto-reload on http://127.0.0.1:8080
 
 mcp: ## Run the MCP server locally on http://127.0.0.1:8100/mcp (needs HAGGLE_MCP_*_TOKEN)
 	uv run haggle-mcp
+
+seller: ## Run the seller agent (A2A) on http://127.0.0.1:8200 (needs `make mcp` running)
+	uv run haggle-seller
+
+play: ## Play in the terminal: make play LEVEL=3 CAR=dodge-challenger-rt-1970
+	uv run haggle-play --level $(or $(LEVEL),3) --car $(or $(CAR),dodge-challenger-rt-1970)
 
 spike: ## Week 2 tracer bullet: ADK -> MCP -> A2A with a scripted model (no LLM, no cost)
 	ADK_SUPPRESS_A2A_EXPERIMENTAL_FEATURE_WARNINGS=true uv run python spikes/w02_tracer_bullet.py

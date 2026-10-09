@@ -61,6 +61,12 @@ addopts = "-ra --strict-markers --import-mode=importlib -m 'not llm'" # LLM test
 asyncio_mode = "auto"
 asyncio_default_fixture_loop_scope = "session"
 asyncio_default_test_loop_scope = "session" # tests and fixtures share ONE event loop
+filterwarnings = [
+  # Noise from inside ADK itself (it instantiates its own deprecated MCPTool alias) and its
+  # experimental-feature notices. Our own code must stay warning-free.
+  "ignore:MCPTool class is deprecated:DeprecationWarning:google.adk",
+  "ignore::UserWarning:google.adk",
+]
 markers = [
   "db: needs a running Postgres (make db-up). Skipped when unreachable unless HAGGLE_REQUIRE_DB=1.",
   "llm: calls a real LLM. Never runs in CI.",

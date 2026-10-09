@@ -39,6 +39,27 @@ services:
       db:
         condition: service_healthy
 
+  seller:
+    build:
+      context: .
+      dockerfile: services/seller/Dockerfile
+    # GOOGLE_API_KEY and LANGFUSE_* come from your local .env (never committed).
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      HAGGLE_ENV: local
+      HAGGLE_DATABASE_URL: postgresql+psycopg://haggle:haggle@db:5432/haggle
+      HAGGLE_SELLER_MCP_URL: http://mcp:8100/mcp
+      HAGGLE_SELLER_MCP_TOKEN: local-seller-token # must match the mcp service above
+    ports:
+      - "127.0.0.1:8200:8200"
+    depends_on:
+      db:
+        condition: service_healthy
+      mcp:
+        condition: service_started
+
   api:
     build:
       context: .
