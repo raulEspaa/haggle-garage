@@ -15,6 +15,7 @@ from mcp.client.streamable_http import streamable_http_client
 from pydantic import SecretStr
 from starlette.testclient import TestClient
 
+from haggle_mcp.rag.embeddings import FakeEmbedder
 from haggle_mcp.server import build_app, build_server
 from haggle_mcp.settings import McpSettings
 
@@ -79,7 +80,10 @@ async def test_no_tool_lets_the_llm_choose_the_game() -> None:
 @pytest.fixture
 async def server_url(database_url: str, migrated_engine: object) -> AsyncIterator[str]:
     config = uvicorn.Config(
-        build_app(SETTINGS, database_url), host="127.0.0.1", port=0, log_level="warning"
+        build_app(SETTINGS, database_url, FakeEmbedder()),
+        host="127.0.0.1",
+        port=0,
+        log_level="warning",
     )
     server = uvicorn.Server(config)
     task = asyncio.create_task(server.serve())
@@ -120,6 +124,19 @@ async def test_catalog_scope_cannot_call_seller_tools(
     result = await call(server_url, headers, "evaluate_offer", {"offer_usd": 30_000})
 
     assert result.is_error  # type: ignore[attr-defined]
+
+
+@pytest.mark.db
+async def test_catalog_scope_can_search_the_sheets(server_url: str) -> None:
+    result = await call(
+        server_url,
+        {"X-Haggle-Token": "catalog-test-token"},
+        "lookup_model_sheet",
+        {"query": "rust"},
+    )
+
+    assert not result.is_error  # type: ignore[attr-defined]
+    assert result.structured_content["schema_version"] == "haggle.sheet_results.v1"  # type: ignore[attr-defined]
 
 
 @pytest.mark.db

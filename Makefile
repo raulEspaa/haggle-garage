@@ -3,7 +3,7 @@
 GIT_SHA := $(shell git rev-parse --short HEAD 2>/dev/null || echo dev)
 
 .PHONY: help sync fmt lint types test test-db check db-up db-down db-reset migrate seed api \
-        docker-api docker-mcp mcp spike precommit-install tf-check doctor
+        docker-api docker-mcp mcp spike precommit-install tf-check doctor test-llm ingest
 
 help: ## List available targets
 	@grep -E '^[a-zA-Z_-]+:.*?## ' $(MAKEFILE_LIST) | \
@@ -48,6 +48,12 @@ test: ## Run tests (DB tests are skipped if Postgres is down)
 
 test-db: ## Run tests and FAIL if Postgres is not reachable (what CI does)
 	HAGGLE_REQUIRE_DB=1 uv run pytest --cov=haggle_core --cov=haggle_api
+
+test-llm: ## Tests that call Gemini (costs tokens; needs GOOGLE_API_KEY in .env). Never in CI
+	set -a && . ./.env && set +a && HAGGLE_REQUIRE_DB=1 uv run pytest -m llm -v
+
+ingest: ## Embed db/sheets/*.md into pgvector (Gemini embeddings)
+	uv run haggle-ingest
 
 check: lint types test ## Everything CI checks for Python
 

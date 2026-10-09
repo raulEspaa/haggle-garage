@@ -7,14 +7,17 @@ authors = [
 ]
 requires-python = ">=3.13,<3.14"
 dependencies = [
+    "google-genai>=2.29",
     "haggle-core",
     "mcp>=2.3",
+    "python-dotenv>=1.2.4",
     "starlette>=1.7.0",
     "uvicorn[standard]>=0.54.0",
 ]
 
 [project.scripts]
 haggle-mcp = "haggle_mcp.server:run"
+haggle-ingest = "haggle_mcp.rag.ingest:main"
 
 [build-system]
 requires = ["uv_build>=0.12.23,<0.13.0"]

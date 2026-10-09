@@ -1,0 +1,35 @@
+# Retrieval smoke set (docs/06-evaluation-plan.md §3). Mostly DEALER-SPECIFIC facts: the LLM
+# cannot know them from pre-training, so a correct answer proves retrieval worked (ADR-0011).
+# expected_section must match a "## " heading of the sheet exactly.
+version: 1
+questions:
+  - q: When was the fuel pump replaced on the Grand National for sale?
+    sheet: buick-grand-national-1987
+    section: This dealer's car (listing notes)
+  - q: What does the dealer's guide say a grade 3 Challenger is worth?
+    sheet: dodge-challenger-rt-1970
+    section: Market notes (synthetic, game data)
+  - q: Is the cowl induction hood on the Camaro original from the factory?
+    sheet: chevrolet-camaro-z28-1969
+    section: This dealer's car (listing notes)
+  - q: Which engine code marks a genuine 1969 Z/28 block?
+    sheet: chevrolet-camaro-z28-1969
+    section: Engine and drivetrain
+  - q: How do I recognise a factory 440 Six Pack car from the VIN?
+    sheet: dodge-challenger-rt-1970
+    section: Engines and drivetrain
+  - q: What should I check on the turbo of a Grand National before buying?
+    sheet: buick-grand-national-1987
+    section: Known issues and red flags
+  - q: How much less is a modified Grand National worth?
+    sheet: buick-grand-national-1987
+    section: Market notes (synthetic, game data)
+  - q: Where do first generation Camaros usually rust?
+    sheet: chevrolet-camaro-z28-1969
+    section: Known issues and red flags
+  - q: When were the Six Pack carburetors on the Plum Crazy car rebuilt?
+    sheet: dodge-challenger-rt-1970
+    section: This dealer's car (listing notes)
+  - q: Why was the Z/28 engine limited to 302 cubic inches?
+    sheet: chevrolet-camaro-z28-1969
+    section: Overview

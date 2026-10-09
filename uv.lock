@@ -612,16 +612,20 @@ name = "haggle-mcp"
 version = "0.1.0"
 source = { editable = "services/mcp" }
 dependencies = [
+    { name = "google-genai" },
     { name = "haggle-core" },
     { name = "mcp" },
+    { name = "python-dotenv" },
     { name = "starlette" },
     { name = "uvicorn", extra = ["standard"] },
 ]
 
 [package.metadata]
 requires-dist = [
+    { name = "google-genai", specifier = ">=2.29" },
     { name = "haggle-core", editable = "packages/core" },
     { name = "mcp", specifier = ">=2.3" },
+    { name = "python-dotenv", specifier = ">=1.2.4" },
     { name = "starlette", specifier = ">=1.7.0" },
     { name = "uvicorn", extras = ["standard"], specifier = ">=0.54.0" },
 ]

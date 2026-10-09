@@ -42,6 +42,22 @@ class OfferDecisionOut(BaseModel):
     reason: OfferReason
 
 
+class SheetHitOut(BaseModel):
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    sheet_slug: str
+    section: str
+    text: str  # reference material: the seller wraps it as data, never as instructions
+    score: float
+
+
+class SheetResultsOut(BaseModel):
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    schema_version: Literal["haggle.sheet_results.v1"] = "haggle.sheet_results.v1"
+    results: list[SheetHitOut]
+
+
 class CloseResultOut(BaseModel):
     model_config = ConfigDict(extra="forbid", frozen=True)
 
