@@ -1,4 +1,4 @@
-"""Create games. Used by the dev CLI now and by the api in week 4."""
+"""Create games: the api (human players), the buyer CLI (agent games) and the evals."""
 
 import random
 import uuid
@@ -26,6 +26,7 @@ async def create_game(
     client_ip_hash: str | None = None,
     game_token_hash: str | None = None,
     opening_message: str | None = None,
+    buyer_persona: str | None = None,
 ) -> uuid.UUID:
     async with sessions() as session, session.begin():
         row = (
@@ -49,6 +50,7 @@ async def create_game(
             turn_cap=turn_cap,
             client_ip_hash=client_ip_hash,
             game_token_hash=game_token_hash,
+            buyer_persona=buyer_persona,
         )
         session.add(game)
         if opening_message:

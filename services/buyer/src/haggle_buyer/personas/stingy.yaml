@@ -1,0 +1,11 @@
+# Patient and cheap: anchors low, raises in small steps and lets the dealer do the moving.
+# Plays the "oracle" game: watches how counters move after each offer.
+id: stingy
+anchor_ratio: 0.62
+max_raise_ratio_per_turn: 0.025
+patience_turns: 11
+walk_away_ratio: 0.86
+tactics: [oracle_probing]
+style: >
+  Polite but tight-fisted. Points out every flaw in the listing (wear, non-original parts,
+  mileage) to justify a low price. Short messages. Never sounds in a hurry.

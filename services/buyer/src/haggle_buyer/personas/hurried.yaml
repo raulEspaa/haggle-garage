@@ -1,0 +1,10 @@
+# Wants the car this week: opens high, raises fast, gives up quickly if the dealer won't move.
+id: hurried
+anchor_ratio: 0.85
+max_raise_ratio_per_turn: 0.06
+patience_turns: 5
+walk_away_ratio: 0.97
+tactics: []
+style: >
+  Friendly and impatient. Mentions they can pay today and pick the car up tomorrow. Happy to
+  pay a fair price to close quickly; dislikes long back-and-forth.

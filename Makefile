@@ -3,7 +3,8 @@
 GIT_SHA := $(shell git rev-parse --short HEAD 2>/dev/null || echo dev)
 
 .PHONY: help sync fmt lint types test test-db check db-up db-down db-reset migrate seed api \
-        docker-api docker-mcp mcp seller play spike precommit-install tf-check doctor test-llm ingest
+        docker-api docker-mcp mcp seller play spike precommit-install tf-check doctor test-llm ingest \
+        buyer buyer-matrix
 
 help: ## List available targets
 	@grep -E '^[a-zA-Z_-]+:.*?## ' $(MAKEFILE_LIST) | \
@@ -86,6 +87,12 @@ seller: ## Run the seller agent (A2A) on http://127.0.0.1:8200 (needs `make mcp`
 
 play: ## Play in the terminal: make play LEVEL=3 CAR=dodge-challenger-rt-1970
 	uv run haggle-play --level $(or $(LEVEL),3) --car $(or $(CAR),dodge-challenger-rt-1970)
+
+buyer: ## AI buyer plays one game: make buyer LEVEL=2 PERSONA=manipulator CAR=dodge-challenger-rt-1970
+	uv run haggle-buyer --level $(or $(LEVEL),2) --persona $(or $(PERSONA),stingy) --car $(or $(CAR),dodge-challenger-rt-1970)
+
+buyer-matrix: ## 3 personas x 3 levels against the running seller (~$0.05 of Gemini)
+	uv run haggle-buyer --matrix --car $(or $(CAR),dodge-challenger-rt-1970)
 
 spike: ## Week 2 tracer bullet: ADK -> MCP -> A2A with a scripted model (no LLM, no cost)
 	ADK_SUPPRESS_A2A_EXPERIMENTAL_FEATURE_WARNINGS=true uv run python spikes/w02_tracer_bullet.py
