@@ -3,7 +3,7 @@
 GIT_SHA := $(shell git rev-parse --short HEAD 2>/dev/null || echo dev)
 
 .PHONY: help sync fmt lint types test test-db check db-up db-down db-reset migrate seed api \
-        docker-api precommit-install tf-check doctor
+        docker-api docker-mcp mcp spike precommit-install tf-check doctor
 
 help: ## List available targets
 	@grep -E '^[a-zA-Z_-]+:.*?## ' $(MAKEFILE_LIST) | \
@@ -71,6 +71,15 @@ seed: ## Load the synthetic inventory (idempotent)
 # ----------------------------------------------------------------------------- run / build
 api: ## Run the API locally with auto-reload on http://127.0.0.1:8080
 	uv run haggle-api
+
+mcp: ## Run the MCP server locally on http://127.0.0.1:8100/mcp (needs HAGGLE_MCP_*_TOKEN)
+	uv run haggle-mcp
+
+spike: ## Week 2 tracer bullet: ADK -> MCP -> A2A with a scripted model (no LLM, no cost)
+	ADK_SUPPRESS_A2A_EXPERIMENTAL_FEATURE_WARNINGS=true uv run python spikes/w02_tracer_bullet.py
+
+docker-mcp: ## Build the mcp container image
+	docker build -f services/mcp/Dockerfile --build-arg GIT_SHA=$(GIT_SHA) -t haggle-mcp:$(GIT_SHA) .
 
 docker-api: ## Build the api container image
 	docker build -f services/api/Dockerfile --build-arg GIT_SHA=$(GIT_SHA) -t haggle-api:$(GIT_SHA) .

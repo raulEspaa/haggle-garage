@@ -1,0 +1,206 @@
+{
+  "close_deal": {
+    "annotations": {
+      "destructive_hint": false,
+      "idempotent_hint": true,
+      "open_world_hint": false,
+      "read_only_hint": false
+    },
+    "description": "Finalize the sale at a price the buyer has explicitly agreed to. Call it only after\nthe buyer clearly accepts. If it is rejected, do not reveal why: keep negotiating.",
+    "input_schema": {
+      "properties": {
+        "idempotency_key": {
+          "description": "A new random UUID for this closing attempt.",
+          "format": "uuid",
+          "title": "Idempotency Key",
+          "type": "string"
+        },
+        "price_usd": {
+          "maximum": 10000000,
+          "minimum": 1,
+          "title": "Price Usd",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "price_usd",
+        "idempotency_key"
+      ],
+      "title": "close_dealArguments",
+      "type": "object"
+    },
+    "output_schema": {
+      "$defs": {
+        "CloseRejection": {
+          "description": "Deliberately generic: \"below floor\" and \"no matching accept\" both map to NOT_ACCEPTED,\notherwise the rejection itself would be an oracle on the floor (threat T9).",
+          "enum": [
+            "not_accepted",
+            "game_not_open"
+          ],
+          "title": "CloseRejection",
+          "type": "string"
+        }
+      },
+      "additionalProperties": false,
+      "properties": {
+        "deal_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Deal Id"
+        },
+        "price_usd": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Price Usd"
+        },
+        "reason": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/CloseRejection"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "schema_version": {
+          "const": "haggle.close_result.v1",
+          "default": "haggle.close_result.v1",
+          "title": "Schema Version",
+          "type": "string"
+        },
+        "status": {
+          "enum": [
+            "closed",
+            "rejected"
+          ],
+          "title": "Status",
+          "type": "string"
+        }
+      },
+      "required": [
+        "status"
+      ],
+      "title": "CloseResultOut",
+      "type": "object"
+    }
+  },
+  "evaluate_offer": {
+    "annotations": {
+      "idempotent_hint": true,
+      "open_world_hint": false,
+      "read_only_hint": false
+    },
+    "description": "Evaluate the buyer's latest explicit price offer for this car. Call it once per buyer\nmessage that contains a new price. It returns your decision and the only price you may\nquote. Never quote any other price.",
+    "input_schema": {
+      "properties": {
+        "offer_usd": {
+          "description": "The buyer's latest explicit offer in whole US dollars, exactly as the buyer stated it.",
+          "maximum": 10000000,
+          "minimum": 1,
+          "title": "Offer Usd",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "offer_usd"
+      ],
+      "title": "evaluate_offerArguments",
+      "type": "object"
+    },
+    "output_schema": {
+      "$defs": {
+        "Decision": {
+          "enum": [
+            "accept",
+            "counter",
+            "reject"
+          ],
+          "title": "Decision",
+          "type": "string"
+        },
+        "OfferReason": {
+          "description": "Why `evaluate_offer` decided what it did. No value depends on the secret floor.",
+          "enum": [
+            "meets_current_target",
+            "below_current_target",
+            "lowball",
+            "already_evaluated_this_turn"
+          ],
+          "title": "OfferReason",
+          "type": "string"
+        }
+      },
+      "additionalProperties": false,
+      "properties": {
+        "accepted_usd": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Accepted Usd"
+        },
+        "counter_usd": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Counter Usd"
+        },
+        "decision": {
+          "$ref": "#/$defs/Decision"
+        },
+        "final_offer": {
+          "title": "Final Offer",
+          "type": "boolean"
+        },
+        "reason": {
+          "$ref": "#/$defs/OfferReason"
+        },
+        "schema_version": {
+          "const": "haggle.offer_decision.v1",
+          "default": "haggle.offer_decision.v1",
+          "title": "Schema Version",
+          "type": "string"
+        },
+        "turn": {
+          "title": "Turn",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "decision",
+        "turn",
+        "final_offer",
+        "reason"
+      ],
+      "title": "OfferDecisionOut",
+      "type": "object"
+    }
+  }
+}

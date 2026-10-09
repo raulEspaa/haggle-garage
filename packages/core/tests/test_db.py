@@ -89,3 +89,10 @@ def test_new_games_start_open(conn: Connection) -> None:
     ).one()
 
     assert (status, turn_count) == ("open", 0)
+
+
+async def test_async_engine_works(session_factory: object) -> None:
+    # Regression: SQLAlchemy 2.1 no longer installs greenlet by default; without the
+    # `sqlalchemy[asyncio]` extra every async query fails at runtime.
+    async with session_factory() as session:  # type: ignore[operator]
+        assert await session.scalar(text("SELECT 1")) == 1

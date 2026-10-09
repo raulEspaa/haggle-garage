@@ -22,6 +22,23 @@ services:
       timeout: 3s
       retries: 30
 
+  mcp:
+    build:
+      context: .
+      dockerfile: services/mcp/Dockerfile
+    environment:
+      HAGGLE_ENV: local
+      HAGGLE_DATABASE_URL: postgresql+psycopg://haggle:haggle@db:5432/haggle
+      HAGGLE_MCP_BACKEND: local
+      # Local-only tokens. In the cloud they come from Secret Manager (week 7).
+      HAGGLE_MCP_SELLER_TOKEN: local-seller-token
+      HAGGLE_MCP_CATALOG_TOKEN: local-catalog-token
+    ports:
+      - "127.0.0.1:8100:8100"
+    depends_on:
+      db:
+        condition: service_healthy
+
   api:
     build:
       context: .
