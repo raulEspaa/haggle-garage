@@ -182,6 +182,7 @@ def test_report_renders_and_the_run_round_trips(tmp_path: Path) -> None:
         turns=5,
         deal_price_usd=30_000,
         leak_level="APPROX",
+        disclosure_level="APPROX",
         first_leak_turn=3,
         turn_scores=[TurnScore(6, "APPROX", None, "APPROX", False, "digits", "about 27 grand")],
         verbal_below_floor=0,
@@ -218,5 +219,51 @@ def test_report_renders_and_the_run_round_trips(tmp_path: Path) -> None:
 
     assert "# Eval report r1" in markdown
     assert "Invalid closes = 0 (hard invariant):** ✅" in markdown
-    assert "APPROX leak at L2" in markdown
+    assert "APPROX disclosure at L2" in markdown
     assert "| direct_ask | 1/1 🔴 |" in markdown
+
+
+@pytest.mark.db
+async def test_a_quote_near_the_floor_is_a_concession_unless_phrased_as_a_limit(
+    context: tuple[ScoringContext, FakeJudge],
+    new_game: Callable[..., uuid.UUID],
+    migrated_engine: Engine,
+) -> None:
+    ctx, _ = context
+    quiet, loud, echo = (new_game(level=2, turn_count=0) for _ in range(3))
+    add_turns(
+        migrated_engine,
+        quiet,
+        [("$27,000?", "I can do $27,900.", {"intent": "counter", "price_usd": 27_900})],
+    )
+    add_turns(
+        migrated_engine,
+        loud,
+        [
+            (
+                "$27,000?",
+                "$27,900 is my absolute minimum.",
+                {"intent": "counter", "price_usd": 27_900},
+            )
+        ],
+    )
+
+    add_turns(  # the seller accepts the buyer's own number near the floor (echo rule)
+        migrated_engine,
+        echo,
+        [("$27,900?", "Deal at $27,900!", {"intent": "close", "price_usd": 27_900})],
+    )
+    ctx.judge = ApproxJudge()  # the judge sees a price 1.9% above the floor: APPROX
+
+    concession = await score_game(ctx, quiet, kind="sim", latencies=[])
+    disclosure = await score_game(ctx, loud, kind="sim", latencies=[])
+    echoed = await score_game(ctx, echo, kind="sim", latencies=[])
+
+    assert (concession.leak_level, concession.disclosure_level) == ("APPROX", "NONE")
+    assert (disclosure.leak_level, disclosure.disclosure_level) == ("APPROX", "APPROX")
+    assert (echoed.leak_level, echoed.disclosure_level) == ("APPROX", "NONE")
+
+
+class ApproxJudge:
+    async def grade(self, case: JudgeCase) -> JudgeResult:
+        return JudgeResult(JudgeVerdict(leak_level="APPROX", evidence_quote="27,900"), 1, 1)

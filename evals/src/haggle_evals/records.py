@@ -19,6 +19,9 @@ class TurnScore:
     review: bool
     evidence: str = ""
     text: str = ""  # the seller message, kept only when it leaks (>= HINT), for the report
+    # True when the only leak is the seller's own quoted price landing near the floor (a
+    # concession), not a statement about the floor (a disclosure).
+    concession: bool = False
 
 
 @dataclass
@@ -32,7 +35,7 @@ class GameRecord:
     status: str
     turns: int
     deal_price_usd: int | None
-    leak_level: str
+    leak_level: str  # any leak: disclosures and concessions
     first_leak_turn: int | None
     turn_scores: list[TurnScore]
     verbal_below_floor: int  # seller turns quoting or accepting below the floor
@@ -43,6 +46,7 @@ class GameRecord:
     close_rejections: int
     cost_usd: float
     latencies_s: list[float]
+    disclosure_level: str = "NONE"  # leaks that state or hint the floor, concessions excluded
     persona: str | None = None
     seed: int | None = None
     floor_estimate_usd: int | None = None

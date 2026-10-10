@@ -6,6 +6,7 @@
     haggle-eval label        review the draft labels yourself
     haggle-eval regressions  replay evals/datasets/regressions.yaml (past failures)
     haggle-eval report PATH  regenerate a report from a saved run
+    haggle-eval rescore PATH re-score a saved run with the current scoring code (no LLM calls)
     Options: --levels 2 3 (only those levels), --sim-only, --attacks-only, --concurrency N
 
 Needs the seller (and the MCP server) running: `make mcp` and `make seller`, or compose.
@@ -19,6 +20,7 @@ import random
 import subprocess
 import sys
 import uuid
+from dataclasses import replace
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
@@ -30,6 +32,7 @@ from haggle_buyer.prompts import PROMPT_VERSION as BUYER_PROMPT
 from haggle_buyer.settings import get_buyer_settings
 from haggle_core.db.models import Game, LlmUsage
 from haggle_core.db.session import create_engine, create_session_factory
+from haggle_core.leaks import LeakLevel
 from haggle_core.tracing import setup_langfuse
 from haggle_evals.calibration import calibrate, label_interactively
 from haggle_evals.datasets import DATASETS_DIR, load_attacks, load_labels, load_scenarios
@@ -37,7 +40,7 @@ from haggle_evals.judge import JUDGE_MODEL, JUDGE_PROMPT_VERSION, GeminiJudge
 from haggle_evals.records import RunRecord, load_run, save_run
 from haggle_evals.report import render
 from haggle_evals.runner import RunContext, run_attacks, run_simulations
-from haggle_evals.scoring import ScoringContext
+from haggle_evals.scoring import SCORING_VERSION, ScoringContext, rescore_game
 from haggle_seller.agent import load_prompt
 from haggle_seller.settings import get_seller_settings
 
@@ -71,6 +74,7 @@ def _versions() -> dict[str, str]:
         "judge_prompt": JUDGE_PROMPT_VERSION,
         "attacks": attacks.version,
         "scenarios": scenarios.version,
+        "scoring": SCORING_VERSION,
     }
 
 
@@ -202,6 +206,31 @@ def _write(run: RunRecord) -> None:
     print(f"\nRaw records: {raw}\nReport:      {report}  (cost ${run.cost_usd:.2f})")
 
 
+async def _rescore(run: RunRecord) -> RunRecord:
+    """Leak scoring only: other attack criteria (canary, off-topic) were judged on the full
+    replies during the run and are kept as they were."""
+    engine = create_engine()
+    scoring = ScoringContext(
+        create_session_factory(engine),
+        None,
+        JUDGE_MODEL,
+        random.Random(run.run_id),  # noqa: S311 (unused: prior verdicts are reused)
+    )
+    games = [await rescore_game(scoring, g) for g in run.games]
+    attacks = []
+    for attack in run.attacks:
+        game = await rescore_game(scoring, attack.game)
+        success, criterion = attack.success, attack.criterion
+        if criterion.startswith(("leak >=", "disclosure >=")):
+            needed = LeakLevel[criterion.split(">= ")[1]]
+            success = LeakLevel[game.disclosure_level] >= needed
+            criterion = f"disclosure >= {needed.name}"
+        attacks.append(replace(attack, game=game, success=success, criterion=criterion))
+    await engine.dispose()
+    versions = {**run.versions, "scoring": SCORING_VERSION}
+    return replace(run, games=games, attacks=attacks, versions=versions)
+
+
 async def _calibrate(args: argparse.Namespace) -> int:
     labels = load_labels()
     result = await calibrate(GeminiJudge(), labels, args.concurrency)
@@ -241,12 +270,17 @@ def main() -> None:
     sub.add_parser("label")
     rep = sub.add_parser("report")
     rep.add_argument("path", type=Path)
+    res = sub.add_parser("rescore")
+    res.add_argument("path", type=Path)
     args = parser.parse_args()
 
     if args.command in ("smoke", "full", "regressions"):
         sys.exit(asyncio.run(_run_suite(args, smoke=args.command == "smoke")))
     if args.command == "calibrate":
         sys.exit(asyncio.run(_calibrate(args)))
+    if args.command == "rescore":
+        _write(asyncio.run(_rescore(load_run(args.path))))
+        return
     if args.command == "label":
         print(f"Reviewed {label_interactively()} labels. Then run: make eval-calibrate")
         return

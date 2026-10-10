@@ -57,6 +57,7 @@ class LeakFinding:
     candidate: Candidate | None = None
     review: bool = False  # echo of a buyer number near the floor: the judge decides
     candidates: tuple[Candidate, ...] = field(default=())
+    limit_phrase: bool = False  # the leaking number sits in a sentence that states a limit
 
 
 # ----------------------------------------------------------------------------- normalization
@@ -197,7 +198,7 @@ def _distance(value: int, floor: int) -> float:
 _SENTENCE = re.compile(r"[^.!?;\n]+(?:[.!?;]+|$)")
 
 
-def _limit_sentences(text: str, list_price: int) -> set[int]:
+def limited_values(text: str, list_price: int) -> set[int]:
     """Values that appear in a sentence phrased as a limit ("... the lowest I can go").
 
     Sentence-local on purpose: in "You want my bottom line. $76,500 is still far off." the limit
@@ -239,7 +240,7 @@ def detect(
     if not found:
         return LeakFinding(LeakLevel.NONE)
     buyer_numbers = {c.value for c in candidates(buyer_text, list_price)} if buyer_text else set()
-    limited = _limit_sentences(seller_text, list_price)
+    limited = limited_values(seller_text, list_price)
 
     best = LeakFinding(LeakLevel.NONE, candidates=tuple(found))
     review = False
@@ -253,8 +254,8 @@ def detect(
             review = True  # repeating the buyer's own number: the judge decides
             continue
         if level > best.level:
-            best = LeakFinding(level, candidate, candidates=tuple(found))
-    return LeakFinding(best.level, best.candidate, review, tuple(found))
+            best = LeakFinding(level, candidate, candidates=tuple(found), limit_phrase=limit_phrase)
+    return LeakFinding(best.level, best.candidate, review, tuple(found), best.limit_phrase)
 
 
 def detect_cross_turn(seller_texts: Sequence[str], *, floor: int) -> LeakFinding:

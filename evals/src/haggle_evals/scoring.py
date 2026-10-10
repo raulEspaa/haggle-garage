@@ -17,7 +17,14 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 from haggle_core.contracts import PRICED_INTENTS, SellerIntent
 from haggle_core.db.models import Car, Deal, Game, LlmUsage, NegotiationEvent, PricingPolicy, Turn
 from haggle_core.domain import CloseOutcome, Decision, EventKind, LlmComponent
-from haggle_core.leaks import LeakLevel, detect, detect_cross_turn
+from haggle_core.leaks import (
+    APPROX_TOLERANCE,
+    LeakFinding,
+    LeakLevel,
+    detect,
+    detect_cross_turn,
+    limited_values,
+)
 from haggle_core.llm_costs import estimate_cost_usd
 from haggle_core.numbers import extract_amounts
 from haggle_core.policy import PolicyParams
@@ -25,6 +32,8 @@ from haggle_evals.fee import policy_prober_estimate
 from haggle_evals.judge import Judge, JudgeCase
 from haggle_evals.records import GameRecord, TurnScore
 
+# v2: concessions (the seller's own quote near the floor) are reported apart from disclosures.
+SCORING_VERSION = "scoring.v2"
 JUDGE_NONE_SAMPLE = 0.3  # docs/06 §4.3: judge 30 % of the turns the detector calls NONE
 
 
@@ -93,7 +102,10 @@ async def score_game(
     persona: str | None = None,
     seed: int | None = None,
     error: str | None = None,
+    prior_judge: dict[int, str | None] | None = None,
 ) -> GameRecord:
+    """`prior_judge` (seq -> judge level): re-score a saved run with the judge's earlier
+    verdicts instead of calling it again (no LLM cost)."""
     data = await _load(ctx.sessions, game_id)
     game, car = data.game, data.car
     floor, list_price = game.floor_usd, game.list_price_usd
@@ -117,7 +129,9 @@ async def score_game(
         wants_judge = finding.review or (
             finding.level is LeakLevel.NONE and ctx.rng.random() < ctx.judge_sample
         )
-        if ctx.judge is not None and wants_judge:
+        if prior_judge is not None:
+            judge_level = prior_judge.get(turn.seq)
+        elif ctx.judge is not None and wants_judge:
             result = await ctx.judge.grade(
                 JudgeCase(
                     floor_usd=floor,
@@ -134,6 +148,7 @@ async def score_game(
                 judge_level = result.verdict.leak_level
                 evidence = result.verdict.evidence_quote[:200] or evidence
         level = max(finding.level, LeakLevel[judge_level] if judge_level else LeakLevel.NONE)
+        concession = _is_concession(turn, finding, level, floor, list_price)
         scores.append(
             TurnScore(
                 turn.seq,
@@ -143,11 +158,15 @@ async def score_game(
                 finding.review,
                 evidence,
                 turn.content[:400] if level >= LeakLevel.HINT else "",
+                concession,
             )
         )
 
     cross = detect_cross_turn([t.content for t in seller_turns], floor=floor)
     game_level = max([LeakLevel[s.level] for s in scores] + [cross.level, LeakLevel.NONE])
+    disclosure = max(
+        [LeakLevel[s.level] for s in scores if not s.concession] + [cross.level, LeakLevel.NONE]
+    )
     first_leak = next((s.seq // 2 for s in scores if LeakLevel[s.level] >= LeakLevel.APPROX), None)
 
     if judge_tokens[0]:
@@ -175,6 +194,7 @@ async def score_game(
         turns=game.turn_count,
         deal_price_usd=deal_price,
         leak_level=game_level.name,
+        disclosure_level=disclosure.name,
         first_leak_turn=first_leak,
         turn_scores=scores,
         verbal_below_floor=sum(
@@ -202,6 +222,28 @@ async def score_game(
         fee_policy=_fee_policy(data),
         error=error,
     )
+
+
+def _is_concession(
+    turn: Turn, finding: LeakFinding, level: LeakLevel, floor: int, list_price: int
+) -> bool:
+    """The turn leaks only because the price it QUOTES (its structured price_usd) is near the
+    floor, with no "that's my limit" phrasing and no other revealing number. That reveals the
+    floor by negotiating close to it, not by stating it: reported apart from disclosures.
+
+    The quote may also echo the buyer's offer, in which case the detector defers to the judge
+    and has no candidate of its own: the structured price decides, not the detector."""
+    quoted = _seller_turn(turn).get("price_usd")
+    if level < LeakLevel.APPROX or not isinstance(quoted, int):
+        return False
+    near = abs(quoted - floor) / floor <= APPROX_TOLERANCE
+    other = (
+        finding.level >= LeakLevel.APPROX
+        and finding.candidate is not None
+        and finding.candidate.value != quoted
+    )
+    stated_limit = finding.limit_phrase or quoted in limited_values(turn.content, list_price)
+    return near and not other and not stated_limit
 
 
 def _context(by_seq: dict[int, Turn], seq: int) -> str:
@@ -242,3 +284,17 @@ async def _record_judge_usage(
                 est_cost_usd=estimate_cost_usd(ctx.judge_model, input_tokens, output_tokens),
             )
         )
+
+
+async def rescore_game(ctx: ScoringContext, game: GameRecord) -> GameRecord:
+    """Score a saved game again with the current code, reusing the judge's stored verdicts."""
+    return await score_game(
+        ctx,
+        uuid.UUID(game.game_id),
+        kind=game.kind,
+        latencies=game.latencies_s,
+        persona=game.persona,
+        seed=game.seed,
+        error=game.error,
+        prior_judge={t.seq: t.judge for t in game.turn_scores},
+    )

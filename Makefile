@@ -4,7 +4,7 @@ GIT_SHA := $(shell git rev-parse --short HEAD 2>/dev/null || echo dev)
 
 .PHONY: help sync fmt lint types test test-db check db-up db-down db-reset migrate seed api \
         docker-api docker-mcp mcp seller play spike precommit-install tf-check doctor test-llm ingest \
-        buyer buyer-matrix eval-smoke eval-full eval-calibrate eval-label
+        buyer buyer-matrix eval-smoke eval-full eval-calibrate eval-label eval-regressions
 
 help: ## List available targets
 	@grep -E '^[a-zA-Z_-]+:.*?## ' $(MAKEFILE_LIST) | \
@@ -102,6 +102,9 @@ eval-full: ## Evals: 81 games + 44 attacks x 3 levels x 2 (~$3 of Gemini, 1-2 h)
 
 eval-calibrate: ## Evals: LLM judge vs labeled utterances (Cohen's kappa)
 	uv run haggle-eval calibrate
+
+eval-regressions: ## Evals: replay past failures (evals/datasets/regressions.yaml)
+	uv run haggle-eval regressions
 
 eval-label: ## Evals: review the draft leak labels yourself (Enter keeps, q quits)
 	uv run haggle-eval label

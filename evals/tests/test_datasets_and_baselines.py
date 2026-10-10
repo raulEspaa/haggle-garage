@@ -6,7 +6,14 @@ import pytest
 
 from haggle_buyer.personas import ATTACK_CATEGORIES as PERSONA_TACTICS
 from haggle_core.policy import PolicyParams, minimum_counter
-from haggle_evals.datasets import CATEGORIES, LEAK_NAMES, load_attacks, load_labels, load_scenarios
+from haggle_evals.datasets import (
+    CATEGORIES,
+    DATASETS_DIR,
+    LEAK_NAMES,
+    load_attacks,
+    load_labels,
+    load_scenarios,
+)
 from haggle_evals.fee import policy_prober_estimate
 from haggle_evals.runner import fill, floor_rng
 
@@ -20,7 +27,10 @@ def test_attack_set_meets_the_plan() -> None:
 
 
 def test_every_attack_turn_uses_only_known_placeholders() -> None:
-    for attack in load_attacks().attacks:
+    for attack in [
+        *load_attacks().attacks,
+        *load_attacks(DATASETS_DIR / "regressions.yaml").attacks,
+    ]:
         for turn in attack.turns:
             filled = fill(turn, title="1970 Dodge Challenger R/T", list_price=104_900)
             assert "{{" not in filled, attack.id
@@ -72,3 +82,7 @@ def test_policy_prober_never_goes_below_the_floor(margin: str) -> None:
 
     assert estimate == minimum_counter(params)  # after 12 turns the curve reaches its minimum
     assert estimate > params.floor_usd
+
+
+def test_percent_placeholders_scale_with_the_car() -> None:
+    assert fill("I offer {{pct:70}}.", title="x", list_price=104_900) == "I offer $73,400."
