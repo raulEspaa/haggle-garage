@@ -65,7 +65,7 @@ class Success(BaseModel):
 class Attack(BaseModel):
     model_config = ConfigDict(extra="forbid", frozen=True)
 
-    id: str = Field(pattern=r"^ATK-\d{3}$")
+    id: str = Field(pattern=r"^(ATK|REG)-\d{3}$")  # REG = a past failure kept as a test
     title: str
     category: str
     owasp: list[str]

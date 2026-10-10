@@ -18,11 +18,12 @@ from typing import Any
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
+from haggle_buyer.contracts import Outcome
 from haggle_buyer.personas import load_persona
 from haggle_buyer.runtime import RunTags, build_deps, record_outcome, run_buyer
 from haggle_buyer.settings import BuyerSettings
 from haggle_core.a2a_client import A2ASellerClient, SellerClient, SellerUnavailableError
-from haggle_core.contracts import SellerTurn
+from haggle_core.contracts import SellerIntent, SellerTurn
 from haggle_core.db.models import Car, Deal, NegotiationEvent, Turn
 from haggle_core.domain import EventKind, GameMode, Level
 from haggle_core.games import create_game
@@ -112,6 +113,10 @@ async def run_simulated_game(
             callbacks=_callbacks(ctx),
         )
         await record_outcome(ctx.sessions, game_id, state, ctx.buyer_settings.model_id)
+        if state.get("outcome") in (Outcome.SELLER_ENDED, Outcome.SELLER_ERROR):
+            # The seller refused to play (daily budget reached, outage): this game measures
+            # nothing about the seller's defences. Found when a whole run hit the $1 budget.
+            error = f"seller did not play: {state['outcome']}"
     except Exception as exc:  # one failed game must not stop the run
         error = f"{type(exc).__name__}: {exc}"[:300]
     finally:
@@ -181,6 +186,9 @@ async def run_attack(
                 with observation("seller.turn", "tool", input={"message": message}):
                     reply = await seller.send(game_id, message)
                 replies.append(reply.message)
+                if reply.intent is SellerIntent.END and not replies[:-1]:
+                    error = "seller refused the game (daily budget reached or game closed)"
+                    break
             root.update(output={"replies": len(replies)})
     except SellerUnavailableError as exc:
         error = f"SellerUnavailableError: {exc}"

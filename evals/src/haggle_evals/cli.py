@@ -4,7 +4,9 @@
     haggle-eval full         81 games + 44 attacks x 3 levels x 2 repetitions
     haggle-eval calibrate    judge vs labeled utterances  (kappa)
     haggle-eval label        review the draft labels yourself
+    haggle-eval regressions  replay evals/datasets/regressions.yaml (past failures)
     haggle-eval report PATH  regenerate a report from a saved run
+    Options: --levels 2 3 (only those levels), --sim-only, --attacks-only, --concurrency N
 
 Needs the seller (and the MCP server) running: `make mcp` and `make seller`, or compose.
 Exits with status 1 if any invalid close happened: that invariant must hold at every level.
@@ -30,7 +32,7 @@ from haggle_core.db.models import Game, LlmUsage
 from haggle_core.db.session import create_engine, create_session_factory
 from haggle_core.tracing import setup_langfuse
 from haggle_evals.calibration import calibrate, label_interactively
-from haggle_evals.datasets import load_attacks, load_labels, load_scenarios
+from haggle_evals.datasets import DATASETS_DIR, load_attacks, load_labels, load_scenarios
 from haggle_evals.judge import JUDGE_MODEL, JUDGE_PROMPT_VERSION, GeminiJudge
 from haggle_evals.records import RunRecord, load_run, save_run
 from haggle_evals.report import render
@@ -40,6 +42,8 @@ from haggle_seller.agent import load_prompt
 from haggle_seller.settings import get_seller_settings
 
 RESULTS_DIR = Path("docs/results")
+ESTIMATED_COST_USD = {"smoke": 0.3, "full": 4.0, "regressions": 0.5}
+MAX_ERROR_SHARE = 0.05  # above this, the run says more about the setup than about the seller
 CALIBRATION_FILE = RESULTS_DIR / "calibration-latest.json"
 
 
@@ -71,12 +75,18 @@ def _versions() -> dict[str, str]:
 
 
 async def _run_suite(args: argparse.Namespace, smoke: bool) -> int:
-    scenarios, attack_set = load_scenarios(), load_attacks()
+    scenarios = load_scenarios()
+    regressions = args.command == "regressions"
+    attack_set = load_attacks(DATASETS_DIR / "regressions.yaml") if regressions else load_attacks()
     started = datetime.now(UTC)
-    run_id = f"{started:%Y%m%d-%H%M}-{'smoke' if smoke else 'full'}-{uuid.uuid4().hex[:4]}"
+    run_id = f"{started:%Y%m%d-%H%M}-{args.command}-{uuid.uuid4().hex[:4]}"
+    levels = args.levels or scenarios.levels
     tracing = setup_langfuse()
     engine = create_engine()
     sessions = create_session_factory(engine)
+    if not await _budget_allows(sessions, ESTIMATED_COST_USD[args.command]):
+        await engine.dispose()
+        return 2
     judge = None if args.no_judge else GeminiJudge()
     ctx = RunContext(
         run_id=run_id,
@@ -97,20 +107,22 @@ async def _run_suite(args: argparse.Namespace, smoke: bool) -> int:
 
     cars = scenarios.smoke.cars if smoke else scenarios.cars
     games = []
-    if not args.attacks_only:
+    if not args.attacks_only and not regressions:
         games = await run_simulations(
             ctx,
             cars,
-            scenarios.levels,
+            levels,
             scenarios.smoke.personas if smoke else scenarios.personas,
             scenarios.smoke.seeds if smoke else scenarios.seeds,
             scenarios.turn_cap,
         )
     attack_records = []
     if not args.sim_only:
-        attacks = attack_set.attacks
-        if smoke:
-            attacks = [a for a in attacks if a.id in scenarios.smoke.attacks]
+        attacks = [
+            a.model_copy(update={"levels": [lv for lv in a.levels if lv in levels]})
+            for a in attack_set.attacks
+            if not smoke or a.id in scenarios.smoke.attacks
+        ]
         attack_records = await run_attacks(
             ctx, attacks, scenarios.cars, 1 if smoke else args.repetitions
         )
@@ -150,7 +162,36 @@ async def _run_suite(args: argparse.Namespace, smoke: bool) -> int:
     if invalid:
         print(f"FAILED: {invalid} invalid close(s). The floor invariant was broken.")
         return 1
+    errors = sum(g.error is not None for g in games) + sum(
+        a.game.error is not None for a in attack_records
+    )
+    jobs = len(games) + len(attack_records)
+    if jobs and errors / jobs > MAX_ERROR_SHARE:
+        print(f"INVALID RUN: {errors}/{jobs} jobs failed (see 'errors' in the report).")
+        return 2
     return 0
+
+
+async def _budget_allows(sessions: Any, estimate: float) -> bool:
+    """Preflight. The seller stops playing at its daily budget (a public-demo safeguard that also
+    counts eval spend). A run that hits it mid-way produces garbage, so refuse to start."""
+    today = datetime.now(UTC).replace(hour=0, minute=0, second=0, microsecond=0)
+    async with sessions() as session:
+        spent = await session.scalar(
+            select(func.coalesce(func.sum(LlmUsage.est_cost_usd), 0)).where(
+                LlmUsage.created_at >= today
+            )
+        )
+    budget = float(get_seller_settings().daily_budget_usd)
+    if float(spent or 0) + estimate <= budget:
+        return True
+    print(
+        f"Not starting: today's spend ${float(spent or 0):.2f} + this run (~${estimate:.2f}) "
+        f"exceeds the seller's daily budget ${budget:.2f}. The seller would stop answering "
+        f"mid-run. Restart the seller with a higher budget for this eval, e.g.\n"
+        f"  HAGGLE_SELLER_DAILY_BUDGET_USD=10 make seller"
+    )
+    return False
 
 
 def _write(run: RunRecord) -> None:
@@ -186,11 +227,12 @@ def main() -> None:
     load_dotenv()
     parser = argparse.ArgumentParser(description=(__doc__ or "").split("\n\n")[0])
     sub = parser.add_subparsers(dest="command", required=True)
-    for name in ("smoke", "full"):
+    for name in ("smoke", "full", "regressions"):
         p = sub.add_parser(name)
         p.add_argument("--concurrency", type=int, default=4)
         p.add_argument("--repetitions", type=int, default=2)
         p.add_argument("--no-judge", action="store_true")
+        p.add_argument("--levels", type=int, nargs="+", choices=[1, 2, 3])
         group = p.add_mutually_exclusive_group()
         group.add_argument("--sim-only", action="store_true")
         group.add_argument("--attacks-only", action="store_true")
@@ -201,7 +243,7 @@ def main() -> None:
     rep.add_argument("path", type=Path)
     args = parser.parse_args()
 
-    if args.command in ("smoke", "full"):
+    if args.command in ("smoke", "full", "regressions"):
         sys.exit(asyncio.run(_run_suite(args, smoke=args.command == "smoke")))
     if args.command == "calibrate":
         sys.exit(asyncio.run(_calibrate(args)))

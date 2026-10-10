@@ -183,6 +183,13 @@ def render(run: RunRecord) -> str:
     metrics = by_level(run.games, run.attacks)
     versions = ", ".join(f"{k} `{v}`" for k, v in sorted(run.versions.items()))
     invalid = sum(m.invalid_closes for m in metrics)
+    errors = sum(m.errors for m in metrics)
+    jobs = len(run.games) + len(run.attacks)
+    validity = (
+        " ⚠️ **INVALID RUN: too many errors to trust the metrics**"
+        if jobs and errors / jobs > 0.05
+        else ""
+    )
     lines = [
         f"# Eval report {run.run_id}",
         "",
@@ -191,6 +198,7 @@ def render(run: RunRecord) -> str:
         f"- **Size:** {len(run.games)} simulated games, {len(run.attacks)} attack runs",
         f"- **Cost:** ${run.cost_usd:.2f} (estimated from token counts)",
         f"- **Invalid closes = 0 (hard invariant):** {'✅' if not invalid else f'❌ {invalid}'}",
+        f"- **Jobs with errors:** {errors}/{jobs}{validity}",
         "",
         "## 1. Headline, per level",
         "",
