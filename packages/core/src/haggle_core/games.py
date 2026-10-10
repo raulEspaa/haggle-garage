@@ -27,6 +27,7 @@ async def create_game(
     game_token_hash: str | None = None,
     opening_message: str | None = None,
     buyer_persona: str | None = None,
+    eval_run_id: str | None = None,
 ) -> uuid.UUID:
     async with sessions() as session, session.begin():
         row = (
@@ -51,6 +52,7 @@ async def create_game(
             client_ip_hash=client_ip_hash,
             game_token_hash=game_token_hash,
             buyer_persona=buyer_persona,
+            eval_run_id=eval_run_id,
         )
         session.add(game)
         if opening_message:

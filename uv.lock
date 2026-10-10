@@ -7,6 +7,7 @@ members = [
     "haggle-api",
     "haggle-buyer",
     "haggle-core",
+    "haggle-evals",
     "haggle-garage",
     "haggle-mcp",
     "haggle-seller",
@@ -611,6 +612,7 @@ dependencies = [
     { name = "pyyaml" },
     { name = "sqlalchemy", extra = ["asyncio"] },
     { name = "tenacity" },
+    { name = "text2num" },
 ]
 
 [package.metadata]
@@ -626,6 +628,34 @@ requires-dist = [
     { name = "pyyaml", specifier = ">=6.0.3" },
     { name = "sqlalchemy", extras = ["asyncio"], specifier = ">=2.1.4" },
     { name = "tenacity", specifier = ">=9.1.4" },
+    { name = "text2num", specifier = ">=3.1.0" },
+]
+
+[[package]]
+name = "haggle-evals"
+version = "0.1.0"
+source = { editable = "evals" }
+dependencies = [
+    { name = "google-genai" },
+    { name = "haggle-buyer" },
+    { name = "haggle-core" },
+    { name = "haggle-seller" },
+    { name = "langfuse" },
+    { name = "pydantic" },
+    { name = "python-dotenv" },
+    { name = "pyyaml" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "google-genai", specifier = ">=2.29.0" },
+    { name = "haggle-buyer", editable = "services/buyer" },
+    { name = "haggle-core", editable = "packages/core" },
+    { name = "haggle-seller", editable = "services/seller" },
+    { name = "langfuse", specifier = ">=4.15.6" },
+    { name = "pydantic", specifier = ">=2.14.0" },
+    { name = "python-dotenv", specifier = ">=1.2.4" },
+    { name = "pyyaml", specifier = ">=6.0.3" },
 ]
 
 [[package]]
@@ -639,6 +669,7 @@ dev = [
     { name = "haggle-api" },
     { name = "haggle-buyer" },
     { name = "haggle-core" },
+    { name = "haggle-evals" },
     { name = "haggle-mcp" },
     { name = "haggle-seller" },
     { name = "httpx2" },
@@ -660,6 +691,7 @@ dev = [
     { name = "haggle-api", editable = "services/api" },
     { name = "haggle-buyer", editable = "services/buyer" },
     { name = "haggle-core", editable = "packages/core" },
+    { name = "haggle-evals", editable = "evals" },
     { name = "haggle-mcp", editable = "services/mcp" },
     { name = "haggle-seller", editable = "services/seller" },
     { name = "httpx2", specifier = ">=2.13.1" },
@@ -1941,6 +1973,26 @@ source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/47/c6/ee486fd809e357697ee8a44d3d69222b344920433d3b6666ccd9b374630c/tenacity-9.1.4.tar.gz", hash = "sha256:adb31d4c263f2bd041081ab33b498309a57c77f9acf2db65aadf0898179cf93a", size = 49413, upload-time = "2026-02-07T10:45:33.841Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/d7/c1/eb8f9debc45d3b7918a32ab756658a0904732f75e555402972246b0b8e71/tenacity-9.1.4-py3-none-any.whl", hash = "sha256:6095a360c919085f28c6527de529e76a06ad89b23659fa881ae0649b867a9d55", size = 28926, upload-time = "2026-02-07T10:45:32.24Z" },
+]
+
+[[package]]
+name = "text2num"
+version = "3.1.0"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/b7/25/3006bbc89154cf5240f6ddaf43c63bab8895dea61724f545a7b9d3cc8340/text2num-3.1.0.tar.gz", hash = "sha256:e025ab59f2273b3fef8b1fbd082f76559161e4b45cf43a6281bd5eb315a115a5", size = 16921, upload-time = "2026-08-21T16:44:04.218Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/0c/5e/6593b96c34f45766a632fe1774554f8fa81a93280d3812e896f4c727695c/text2num-3.1.0-cp313-cp313-macosx_11_0_arm64.whl", hash = "sha256:a4e31c265047ca2fa85df9ccd2446668b96d5bdc9304475e1b4bdb9937fa0c99", size = 335431, upload-time = "2026-08-21T16:43:02.666Z" },
+    { url = "https://files.pythonhosted.org/packages/ca/bc/4782e37caeba2556846dd94e5f6a4f79329138ce6b82116f8764a9d59e02/text2num-3.1.0-cp313-cp313-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:bdad292f903547540bec26ddcd8df5db104a6f3a2f049f6327c394999e7f48a4", size = 378626, upload-time = "2026-08-21T16:41:41.101Z" },
+    { url = "https://files.pythonhosted.org/packages/8d/ec/5018c35d1cb4cead36ec5bdecea79359f143687747b52b4b18df446a8f98/text2num-3.1.0-cp313-cp313-manylinux_2_17_armv7l.manylinux2014_armv7l.whl", hash = "sha256:e42e9cc9f2c1fefceef49a7e35aae4afc4fb99b8a55ca95e113a327c20736754", size = 386279, upload-time = "2026-08-21T16:41:54.685Z" },
+    { url = "https://files.pythonhosted.org/packages/2e/58/7197feaac99e0a1ef9554474850669756c240493e479a2eb1c55af73ff3f/text2num-3.1.0-cp313-cp313-manylinux_2_17_ppc64le.manylinux2014_ppc64le.whl", hash = "sha256:167d1313ca2596c739a1bf7902f43232fd1560cca5ae448b4d26346564dacd76", size = 487598, upload-time = "2026-08-21T16:42:07.961Z" },
+    { url = "https://files.pythonhosted.org/packages/f6/fe/f2d0d4f91a4f9ae5e4b35dcf699e7b2c9b162a82c19b8d8445b04561fcd2/text2num-3.1.0-cp313-cp313-manylinux_2_17_s390x.manylinux2014_s390x.whl", hash = "sha256:f2fa8be8178882c41c82289084de027aec186d4958bc198612c6482f80279e56", size = 402880, upload-time = "2026-08-21T16:42:21.995Z" },
+    { url = "https://files.pythonhosted.org/packages/bd/29/c054867e3677cebfd133fb920d9b988868e71b0ce826c022d1020dd4b5e1/text2num-3.1.0-cp313-cp313-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:c6581060324992911a5227220342b32a8c2a51c201487a057c94564e94c3b597", size = 377273, upload-time = "2026-08-21T16:42:49.812Z" },
+    { url = "https://files.pythonhosted.org/packages/97/84/c19901b25cb7a8db29701e0a1e38052bc5e0ede54409908dbbd23ca9d15b/text2num-3.1.0-cp313-cp313-manylinux_2_5_i686.manylinux1_i686.whl", hash = "sha256:7a04067ef41c77f439fd4c7b48c1350e6448eb74603cccdc7caf40cc544bfd9e", size = 403326, upload-time = "2026-08-21T16:42:35.065Z" },
+    { url = "https://files.pythonhosted.org/packages/bc/fc/ca5aa3c4dcacb482fb88e4db835add650eca5781658825cd94c007c3e989/text2num-3.1.0-cp313-cp313-musllinux_1_2_aarch64.whl", hash = "sha256:12d2378e306a5437ac9ba396e6f7f7ba0e95c4e66f7286f94199d8c46613aaf3", size = 555912, upload-time = "2026-08-21T16:43:10.279Z" },
+    { url = "https://files.pythonhosted.org/packages/b5/09/5dd0e6c181fde54c2feabb710977e0a83348ce61adeda3c83fbb77561ded/text2num-3.1.0-cp313-cp313-musllinux_1_2_armv7l.whl", hash = "sha256:16b3197d488848e83fb2144501e93ee8f071e3e30b8fe7e2c1fa2f61f0e939a9", size = 662716, upload-time = "2026-08-21T16:43:25.88Z" },
+    { url = "https://files.pythonhosted.org/packages/32/a1/c132da39655b24e0e773ad145ff6ab6e318253faf58fa90dce30a54efbfe/text2num-3.1.0-cp313-cp313-musllinux_1_2_i686.whl", hash = "sha256:57eb863476e3cf83ad9b62b1c02ef8bc890e31919e6eee32db1a8598096847b0", size = 619043, upload-time = "2026-08-21T16:43:40.293Z" },
+    { url = "https://files.pythonhosted.org/packages/f1/95/13a826df9e25c3502e24e680109cb1e094019ee1e341449e5a78ed7039a9/text2num-3.1.0-cp313-cp313-musllinux_1_2_x86_64.whl", hash = "sha256:1c08391328d4f1969dd2d033a0cb672cb480a09862c8d1e5d480bfc73ebf34f2", size = 582664, upload-time = "2026-08-21T16:43:54.821Z" },
+    { url = "https://files.pythonhosted.org/packages/e7/2e/15c1071d641259d6ba79cd6edcd0dddc7c9fe247ba3e14078655955ea600/text2num-3.1.0-cp313-cp313-win_amd64.whl", hash = "sha256:7195588e62aef1c6304cb3baa717e06dd09e9b1d32292a0c5d5abb6e8cb98648", size = 220648, upload-time = "2026-08-21T16:44:10.364Z" },
 ]
 
 [[package]]

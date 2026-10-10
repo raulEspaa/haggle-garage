@@ -81,6 +81,7 @@ def build_deps(settings: BuyerSettings, sessions: async_sessionmaker[AsyncSessio
 class RunTags:
     level: int
     model_id: str
+    extra: tuple[str, ...] = ()  # e.g. the eval run id
 
 
 async def run_buyer(
@@ -102,7 +103,13 @@ async def run_buyer(
         # Read by Langfuse's CallbackHandler: one session per game, shared with the seller.
         "metadata": {"langfuse_session_id": str(game_id)},
     }
-    trace_tags = [f"level-{tags.level}", car_id, f"persona-{persona.id}", PROMPT_VERSION]
+    trace_tags = [
+        f"level-{tags.level}",
+        car_id,
+        f"persona-{persona.id}",
+        PROMPT_VERSION,
+        *tags.extra,
+    ]
     # Our own root observation is the CURRENT OpenTelemetry span while the graph runs. Langfuse's
     # LangChain handler hangs its tree under it, and the A2A client injects its `traceparent`,
     # so the seller (and the MCP server behind it) join this same trace.

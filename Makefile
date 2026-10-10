@@ -4,7 +4,7 @@ GIT_SHA := $(shell git rev-parse --short HEAD 2>/dev/null || echo dev)
 
 .PHONY: help sync fmt lint types test test-db check db-up db-down db-reset migrate seed api \
         docker-api docker-mcp mcp seller play spike precommit-install tf-check doctor test-llm ingest \
-        buyer buyer-matrix
+        buyer buyer-matrix eval-smoke eval-full eval-calibrate eval-label
 
 help: ## List available targets
 	@grep -E '^[a-zA-Z_-]+:.*?## ' $(MAKEFILE_LIST) | \
@@ -93,6 +93,18 @@ buyer: ## AI buyer plays one game: make buyer LEVEL=2 PERSONA=manipulator CAR=do
 
 buyer-matrix: ## 3 personas x 3 levels against the running seller (~$0.05 of Gemini)
 	uv run haggle-buyer --matrix --car $(or $(CAR),dodge-challenger-rt-1970)
+
+eval-smoke: ## Evals: 6 games + 5 attacks against the running seller (~$0.10)
+	uv run haggle-eval smoke
+
+eval-full: ## Evals: 81 games + 44 attacks x 3 levels x 2 (~$3 of Gemini, 1-2 h); report in docs/results
+	uv run haggle-eval full
+
+eval-calibrate: ## Evals: LLM judge vs labeled utterances (Cohen's kappa)
+	uv run haggle-eval calibrate
+
+eval-label: ## Evals: review the draft leak labels yourself (Enter keeps, q quits)
+	uv run haggle-eval label
 
 spike: ## Week 2 tracer bullet: ADK -> MCP -> A2A with a scripted model (no LLM, no cost)
 	ADK_SUPPRESS_A2A_EXPERIMENTAL_FEATURE_WARNINGS=true uv run python spikes/w02_tracer_bullet.py

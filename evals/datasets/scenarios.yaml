@@ -1,0 +1,14 @@
+# Simulated negotiations (docs/06-evaluation-plan.md §3): cars x levels x personas x seeds.
+# The seed fixes the floor and margin of a (car, seed) pair, so ALL levels and personas face
+# the same secret numbers: differences between levels are not floor luck.
+version: scenarios.v1
+cars: [chevrolet-camaro-z28-1969, dodge-challenger-rt-1970, buick-grand-national-1987]
+levels: [1, 2, 3]
+personas: [stingy, hurried, manipulator]
+seeds: [1, 2, 3]
+turn_cap: 12
+smoke:  # make eval-smoke: one game per level and persona on one car, plus 5 attacks
+  cars: [dodge-challenger-rt-1970]
+  seeds: [1]
+  personas: [stingy, manipulator]
+  attacks: [ATK-001, ATK-004, ATK-012, ATK-016, ATK-033]

@@ -1,0 +1,30 @@
+[project]
+name = "haggle-evals"
+version = "0.1.0"
+description = "Evaluation suite: leak detection, LLM judge, scripted attacks, simulated negotiations, report."
+authors = [
+    { name = "uo278036", email = "uo278036@uniovi.es" }
+]
+requires-python = ">=3.13,<3.14"
+dependencies = [
+    "google-genai>=2.29.0",
+    "haggle-buyer",
+    "haggle-core",
+    "haggle-seller",
+    "langfuse>=4.15.6",
+    "pydantic>=2.14.0",
+    "python-dotenv>=1.2.4",
+    "pyyaml>=6.0.3",
+]
+
+[project.scripts]
+haggle-eval = "haggle_evals.cli:main"
+
+[build-system]
+requires = ["uv_build>=0.12.23,<0.13.0"]
+build-backend = "uv_build"
+
+[tool.uv.sources]
+haggle-core = { workspace = true }
+haggle-buyer = { workspace = true }
+haggle-seller = { workspace = true }

@@ -14,7 +14,7 @@ dependencies = []
 package = false
 
 [tool.uv.workspace]
-members = ["packages/*", "services/*"]
+members = ["packages/*", "services/*", "evals"]
 
 [tool.uv.sources]
 haggle-core = { workspace = true }
@@ -22,6 +22,7 @@ haggle-api = { workspace = true }
 haggle-mcp = { workspace = true }
 haggle-seller = { workspace = true }
 haggle-buyer = { workspace = true }
+haggle-evals = { workspace = true }
 
 # ---------------------------------------------------------------- ruff
 [tool.ruff]
@@ -36,7 +37,7 @@ select = ["E", "F", "I", "B", "UP", "S", "ASYNC", "PT", "SIM", "RUF"]
 
 [tool.ruff.lint.isort]
 # Our own packages go in their own import block, after third-party libraries.
-known-first-party = ["haggle_core", "haggle_api", "haggle_buyer", "haggle_mcp", "haggle_seller"]
+known-first-party = ["haggle_core", "haggle_api", "haggle_buyer", "haggle_evals", "haggle_mcp", "haggle_seller"]
 
 [tool.ruff.lint.per-file-ignores]
 "**/tests/**" = ["S101", "S311"] # pytest asserts; seeded PRNGs are intended in tests
@@ -48,11 +49,11 @@ known-first-party = ["haggle_core", "haggle_api", "haggle_buyer", "haggle_mcp", 
 python_version = "3.13"
 strict = true
 plugins = ["pydantic.mypy"]
-files = ["packages", "services", "db/migrations"]
+files = ["packages", "services", "evals/src", "db/migrations"]
 exclude = ["/tests/"]
 
 [[tool.mypy.overrides]]
-module = ["pgvector.*"]
+module = ["pgvector.*", "text_to_num.*"]
 ignore_missing_imports = true
 
 # ---------------------------------------------------------------- pytest
@@ -82,6 +83,7 @@ dev = [
     "haggle-api",
     "haggle-buyer",
     "haggle-core",
+    "haggle-evals",
     "haggle-mcp",
     "haggle-seller",
     "httpx2>=2.13.1",
