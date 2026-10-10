@@ -82,7 +82,10 @@ class RunRecord:
 
 def save_run(run: RunRecord, path: Path) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(json.dumps(asdict(run), indent=1, ensure_ascii=False), encoding="utf-8")
+    # Compact JSON, one run per file: the full run is ~0.5 MB indented, over the repo's
+    # large-file hook. Trailing newline for the end-of-file hook.
+    raw = json.dumps(asdict(run), ensure_ascii=False, separators=(",", ":"))
+    path.write_text(raw + "\n", encoding="utf-8")
 
 
 def load_run(path: Path) -> RunRecord:

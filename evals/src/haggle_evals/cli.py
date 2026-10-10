@@ -238,7 +238,9 @@ async def _calibrate(args: argparse.Namespace) -> int:
     result["judge_model"] = JUDGE_MODEL
     result["judge_prompt"] = JUDGE_PROMPT_VERSION
     CALIBRATION_FILE.parent.mkdir(parents=True, exist_ok=True)
-    CALIBRATION_FILE.write_text(json.dumps(result, indent=1, ensure_ascii=False), encoding="utf-8")
+    CALIBRATION_FILE.write_text(
+        json.dumps(result, indent=1, ensure_ascii=False) + "\n", encoding="utf-8"
+    )
     judge: dict[str, Any] = result["judge"]
     detector: dict[str, Any] = result["detector"]
     print(
