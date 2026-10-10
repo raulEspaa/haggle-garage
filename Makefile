@@ -2,9 +2,12 @@
 .DEFAULT_GOAL := help
 GIT_SHA := $(shell git rev-parse --short HEAD 2>/dev/null || echo dev)
 
+PROJECT ?= haggle-prod-417263
+
 .PHONY: help sync fmt lint types test test-db check db-up db-down db-reset migrate seed api \
         docker-api docker-mcp mcp seller play spike precommit-install tf-check doctor test-llm ingest \
-        buyer buyer-matrix eval-smoke eval-full eval-calibrate eval-label eval-regressions
+        buyer buyer-matrix eval-smoke eval-full eval-calibrate eval-label eval-regressions \
+        deploy-infra deploy-secrets deploy
 
 help: ## List available targets
 	@grep -E '^[a-zA-Z_-]+:.*?## ' $(MAKEFILE_LIST) | \
@@ -108,6 +111,18 @@ eval-regressions: ## Evals: replay past failures (evals/datasets/regressions.yam
 
 eval-label: ## Evals: review the draft leak labels yourself (Enter keeps, q quits)
 	uv run haggle-eval label
+
+deploy-infra: ## Cloud: APIs, service accounts, secrets (empty), registry, budget. No services yet
+	terraform -chdir=infra/terraform apply -input=false \
+	  -target=google_project_service.enabled -target=google_secret_manager_secret_iam_member.access \
+	  -target=google_project_iam_member.vertex_user -target=google_billing_budget.monthly \
+	  -target=google_artifact_registry_repository.containers
+
+deploy-secrets: ## Cloud: give the secrets values (random tokens, Langfuse keys from .env)
+	infra/scripts/bootstrap-secrets.sh $(PROJECT)
+
+deploy: ## Cloud: build + push the 3 images tagged with the commit, then terraform apply
+	sg docker -c "infra/scripts/deploy.sh $(PROJECT)"
 
 spike: ## Week 2 tracer bullet: ADK -> MCP -> A2A with a scripted model (no LLM, no cost)
 	ADK_SUPPRESS_A2A_EXPERIMENTAL_FEATURE_WARNINGS=true uv run python spikes/w02_tracer_bullet.py

@@ -1,6 +1,11 @@
 output "api_url" {
-  description = "Public URL of the api service."
-  value       = google_cloud_run_v2_service.api.uri
+  description = "Public URL of the game."
+  value       = local.service_url.api
+}
+
+output "service_urls" {
+  description = "Deterministic URLs of the three services (seller and mcp are IAM-only)."
+  value       = local.service_url
 }
 
 output "image_repository" {
