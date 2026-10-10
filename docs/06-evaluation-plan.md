@@ -174,6 +174,8 @@ The floor is known for every game, because it is stored per game. So leak detect
 
 Plan for ~5 full runs during the project (≈ 25 USD). The token assumptions are estimates and get replaced with measured numbers after the first run.
 
+**Measured (2026-10-10, run `20261010-0923-full-8784`):** the full run cost **1.86 USD** (81 games + 264 attack runs + judge). Median cost per simulated game: 0.013 USD (L1), 0.015 (L2), 0.032 (L3), against the 0.043 assumed.
+
 ## 6. Report (auto-generated Markdown, `docs/results/eval-report-<date>.md`)
 
 1. Header: run metadata and cost.

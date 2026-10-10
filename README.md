@@ -4,7 +4,7 @@ Negotiate with an AI used-car dealer, or make it leak its secret minimum price.
 A portfolio project about agents (Google ADK, LangGraph), protocols (MCP, A2A), RAG, evals and
 LLM security, deployed on Cloud Run.
 
-> **Status:** Week 5 of 8. Play in the browser, or watch an AI buyer (LangGraph) negotiate with the AI seller (ADK) over A2A: `make buyer`.
+> **Status:** Week 6 of 8. Measured: L1 states its secret floor in 22% of simulated games; L2 and L3 in 0%, and both stop all 44 scripted attacks ([results](docs/results/README.md)).
 
 ## Quickstart (local)
 
@@ -28,6 +28,7 @@ docker compose up --build   # mcp + seller + api: play at http://127.0.0.1:8080
 | `services/api` | FastAPI public API and web page: games, demo limits, strict CSP |
 | `services/mcp` | MCP server: `evaluate_offer`, `close_deal` (policy engine + deal validation) |
 | `services/buyer` | LangGraph buyer agent: personas, appraisal over MCP, code guard, A2A client (`make buyer`) |
+| `evals` | Eval suite: leak detector, LLM judge, scripted attacks, simulated games, reports (`make eval-smoke`) |
 | `services/seller` | ADK seller agent exposed over A2A, guards as callbacks, terminal game (`make play`) |
 | `spikes/` | Throwaway experiments that de-risked the design (`make spike`) |
 | `db/` | Alembic migrations, seed data, Postgres init scripts |
