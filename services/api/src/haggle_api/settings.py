@@ -3,6 +3,7 @@ docs/07-threat-model.md §5."""
 
 from decimal import Decimal
 from functools import lru_cache
+from typing import Literal
 
 from pydantic import SecretStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -15,6 +16,8 @@ class ApiSettings(BaseSettings):
     # A seller turn is 2-3 model calls; on a busy Gemini day that took up to ~60 s. On a timeout
     # the turn still completes on the seller, and the page polls the game state to show it.
     seller_timeout_s: float = 90.0
+    # "google" on Cloud Run: send an ID token for the private seller service (IAM invoker).
+    seller_auth: Literal["none", "google"] = "none"
 
     demo_enabled: bool = True  # the kill switch: false -> 503 for new games and messages
     # Number of reverse proxies in front of us that append to X-Forwarded-For. 0 locally (use the

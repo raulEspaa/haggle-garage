@@ -602,6 +602,7 @@ version = "0.1.0"
 source = { editable = "packages/core" }
 dependencies = [
     { name = "a2a-sdk" },
+    { name = "google-auth" },
     { name = "httpx" },
     { name = "langfuse" },
     { name = "opentelemetry-api" },
@@ -618,6 +619,7 @@ dependencies = [
 [package.metadata]
 requires-dist = [
     { name = "a2a-sdk", specifier = ">=1.2" },
+    { name = "google-auth", specifier = ">=2.61.0" },
     { name = "httpx", specifier = ">=0.28.1" },
     { name = "langfuse", specifier = ">=4.15.6" },
     { name = "opentelemetry-api", specifier = ">=1.42.1" },
@@ -736,6 +738,7 @@ dependencies = [
     { name = "a2a-sdk" },
     { name = "google-adk", extra = ["a2a"] },
     { name = "haggle-core" },
+    { name = "httpx2" },
     { name = "langfuse" },
     { name = "mcp" },
     { name = "openinference-instrumentation-google-adk" },
@@ -747,6 +750,7 @@ requires-dist = [
     { name = "a2a-sdk", specifier = ">=1.2" },
     { name = "google-adk", extras = ["a2a"], specifier = ">=2.11" },
     { name = "haggle-core", editable = "packages/core" },
+    { name = "httpx2", specifier = ">=2.13.1" },
     { name = "langfuse", specifier = ">=4.15.6" },
     { name = "mcp", specifier = ">=2.3" },
     { name = "openinference-instrumentation-google-adk", specifier = ">=1.0.3" },

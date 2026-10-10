@@ -5,8 +5,9 @@ lifespan and stored on `app.state`. Tests pass their own seller client (a fake),
 way you would register a test double in an ASP.NET Core DI container.
 """
 
+import asyncio
 import os
-from collections.abc import AsyncIterator
+from collections.abc import AsyncIterator, Awaitable, Callable
 from contextlib import asynccontextmanager
 from pathlib import Path
 from typing import Literal
@@ -25,6 +26,7 @@ from haggle_api.security import SecurityHeadersMiddleware
 from haggle_api.settings import ApiSettings, get_api_settings
 from haggle_core.a2a_client import A2ASellerClient, SellerClient
 from haggle_core.db.session import create_engine, create_session_factory
+from haggle_core.gcp_auth import IdTokenSource
 from haggle_core.settings import get_settings
 from haggle_core.tracing import setup_langfuse
 
@@ -36,6 +38,17 @@ class Health(BaseModel):
     status: Literal["ok"] = "ok"
     service: Literal["api"] = "api"
     version: str
+
+
+def _seller_auth(settings: ApiSettings) -> Callable[[], Awaitable[dict[str, str]]] | None:
+    if settings.seller_auth == "none":
+        return None
+    source = IdTokenSource(settings.seller_url)
+
+    async def headers() -> dict[str, str]:
+        return await asyncio.to_thread(source.headers)
+
+    return headers
 
 
 def create_app(
@@ -52,7 +65,9 @@ def create_app(
     async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         setup_langfuse()
         engine = create_engine(database_url)
-        client = seller or A2ASellerClient(settings.seller_url, settings.seller_timeout_s)
+        client = seller or A2ASellerClient(
+            settings.seller_url, settings.seller_timeout_s, headers_provider=_seller_auth(settings)
+        )
         app.state.settings = settings
         app.state.games = GameService(engine, create_session_factory(engine), settings, client)
         yield

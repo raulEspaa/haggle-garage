@@ -23,10 +23,12 @@ import json
 import logging
 import re
 import uuid
+from collections.abc import Generator
 from functools import cache
 from pathlib import Path
 from typing import Any
 
+import httpx2
 from google.adk.agents import LlmAgent
 from google.adk.agents.context import Context
 from google.adk.agents.readonly_context import ReadonlyContext
@@ -37,12 +39,16 @@ from google.adk.models.llm_request import LlmRequest
 from google.adk.models.llm_response import LlmResponse
 from google.adk.tools.base_tool import BaseTool
 from google.adk.tools.mcp_tool import McpToolset
-from google.adk.tools.mcp_tool.mcp_session_manager import StreamableHTTPConnectionParams
+from google.adk.tools.mcp_tool.mcp_session_manager import (
+    StreamableHTTPConnectionParams,
+    create_mcp_http_client,
+)
 from google.genai import types
 from pydantic import ValidationError
 
 from haggle_core.contracts import SellerIntent, SellerTurn
 from haggle_core.domain import Level
+from haggle_core.gcp_auth import IdTokenSource
 from haggle_core.numbers import extract_amounts
 from haggle_core.tracing import inject_trace_headers, observation, tag_current_trace
 from haggle_seller.guards import (
@@ -458,6 +464,40 @@ def _intent_matches_deal(turn: SellerTurn, deal: dict[str, Any] | None) -> Selle
     return None
 
 
+class _GoogleIdTokenAuth(httpx2.Auth):
+    """Adds the Cloud Run ID token to EVERY request to the MCP server, including the session
+    handshake and tools/list. A header_provider would miss those (week 3: tools listed without
+    our headers), and at L3 a missing tool means the seller fails closed."""
+
+    def __init__(self, source: IdTokenSource) -> None:
+        self.source = source
+
+    def auth_flow(self, request: httpx2.Request) -> Generator[httpx2.Request, httpx2.Response]:
+        request.headers["Authorization"] = f"Bearer {self.source.token()}"
+        yield request
+
+
+def _mcp_http_client_factory(settings: SellerSettings) -> Any:
+    if settings.mcp_auth == "none":
+        return create_mcp_http_client
+    source = IdTokenSource(settings.mcp_url.removesuffix("/mcp"))  # audience = service URL
+
+    def factory(
+        headers: dict[str, str] | None = None,
+        timeout: Any = None,
+        auth: Any = None,
+    ) -> Any:
+        # ADK annotates this factory with httpx 1.x types, but with the MCP SDK v2 the client
+        # it builds is an httpx2.AsyncClient (checked at runtime), hence httpx2.Auth and Any.
+        return create_mcp_http_client(
+            headers=headers,
+            timeout=timeout,
+            auth=auth or _GoogleIdTokenAuth(source),  # type: ignore[arg-type]
+        )
+
+    return factory
+
+
 def build_seller_agent(
     settings: SellerSettings, repo: SellerRepository, model: str | BaseLlm | None = None
 ) -> LlmAgent:
@@ -489,7 +529,10 @@ def build_seller_agent(
                 # session (header_provider adds the per-game header on tool calls). Without it
                 # the listing got a 401 and ADK silently ran the agent with no tools.
                 connection_params=StreamableHTTPConnectionParams(
-                    url=settings.mcp_url, headers={"X-Haggle-Token": token}, timeout=15
+                    url=settings.mcp_url,
+                    headers={"X-Haggle-Token": token},
+                    timeout=15,
+                    httpx_client_factory=_mcp_http_client_factory(settings),
                 ),
                 header_provider=mcp_headers,
                 tool_filter=tools_for_level,

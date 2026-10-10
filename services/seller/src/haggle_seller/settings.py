@@ -2,6 +2,7 @@
 
 from decimal import Decimal
 from functools import lru_cache
+from typing import Literal
 
 from pydantic import AliasChoices, Field, SecretStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -15,6 +16,8 @@ class SellerSettings(BaseSettings):
     max_output_tokens: int = 600
 
     mcp_url: str = "http://127.0.0.1:8100/mcp"
+    # "google" on Cloud Run: send an ID token for the private MCP service (IAM invoker).
+    mcp_auth: Literal["none", "google"] = "none"
     # Must equal the MCP server's seller token. Locally both read HAGGLE_MCP_SELLER_TOKEN from the
     # same .env; in the cloud each service gets its own secret (week 7).
     mcp_token: SecretStr = Field(

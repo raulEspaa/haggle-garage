@@ -27,6 +27,10 @@ class Settings(BaseSettings):
     # SecretStr hides the value in repr()/logs; call .get_secret_value() only where needed.
     database_url: SecretStr = SecretStr(LOCAL_DATABASE_URL)
     git_sha: str = "dev"
+    # Small pools: Neon's free compute allows ~100 connections in total, shared by every
+    # instance of every service (3 services x up to 2 instances on Cloud Run).
+    db_pool_size: int = 5
+    db_max_overflow: int = 5
 
 
 @lru_cache
