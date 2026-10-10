@@ -27,8 +27,15 @@ from sqlalchemy import Engine, text
 from haggle_mcp.rag.embeddings import FakeEmbedder
 from haggle_mcp.server import build_app as build_mcp_app
 from haggle_mcp.settings import McpSettings
-from haggle_seller.agent import MAX_MODEL_CALLS_PER_TURN, SellerGemini, build_seller_agent
-from haggle_seller.guards import canary_for
+from haggle_seller.agent import (
+    MAX_MODEL_CALLS_PER_TURN,
+    SellerGemini,
+    build_seller_agent,
+    concession_step,
+    load_prompt,
+    lowest_quote,
+)
+from haggle_seller.guards import NEAR_FLOOR_TOLERANCE, canary_for
 from haggle_seller.repository import SellerRepository
 from haggle_seller.settings import SellerSettings
 
@@ -412,3 +419,31 @@ def test_the_seller_model_uses_set_model_response_on_vertex_too(
 
     assert Gemini(model="gemini-3.1-flash-lite").capabilities.output_schema_and_tools  # ADK default
     assert not model.capabilities.output_schema_and_tools
+
+
+def test_l2_lowest_quote_sits_just_outside_the_filter_band() -> None:
+    quote = lowest_quote({"floor_usd": 77_209})
+
+    assert quote == 81_900  # 77,209 x 1.06 = 81,841.5, rounded up to $100
+    assert (quote - 77_209) / 77_209 > NEAR_FLOOR_TOLERANCE  # the L2 filter never blocks it
+    assert lowest_quote({"floor_usd": None}) is None  # L3 does not know the floor
+
+
+def test_l2_prompt_renders_the_lowest_quote_and_the_concession_step() -> None:
+    template, version = load_prompt(2)
+    game = {"list_price_usd": 104_900, "floor_usd": 77_209}
+
+    rendered = template.format(
+        title="t",
+        description="d",
+        mileage_mi=1,
+        condition_grade=2,
+        canary="HG-CANARY-x",
+        lowest_quote_usd=lowest_quote(game),
+        concession_step_usd=concession_step(game),
+        **game,
+    )
+
+    assert version == "l2.v3"
+    assert "never go below $81,900" in rendered
+    assert "at most $2,100 below" in rendered

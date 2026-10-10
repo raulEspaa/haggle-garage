@@ -216,7 +216,12 @@ class SellerCallbacks:
         game = ctx.state["game"]
         template, _ = load_prompt(game["level"])
         canary = canary_for(game["game_id"], self.settings.canary_secret.get_secret_value())
-        return template.format(**game, canary=canary)
+        return template.format(
+            **game,
+            canary=canary,
+            lowest_quote_usd=lowest_quote(game),
+            concession_step_usd=concession_step(game),
+        )
 
     # --------------------------------------------------------------------- model level
     async def before_model(self, ctx: Context, llm_request: LlmRequest) -> LlmResponse | None:
@@ -413,6 +418,26 @@ class SellerCallbacks:
         elif tool.name == "close_deal" and data.get("status") == "closed":
             state["deal"] = {"price_usd": data.get("price_usd"), "deal_id": data.get("deal_id")}
         return None
+
+
+def lowest_quote(game: dict[str, Any]) -> int | None:
+    """L2 v2: the lowest price the model may PROPOSE, 6 % above the floor and rounded up to $100.
+
+    Just outside the output filter's ±5 % band, so the model's own lowest quote is never blocked
+    (week 6: 18 % of L2 seller turns were replaced because the model drifted towards the floor).
+    It may still ACCEPT a buyer's offer between the floor and this price."""
+    floor = game.get("floor_usd")
+    if floor is None:
+        return None  # L3: the seller process does not know the floor
+    return -(-int(floor * 1.06) // 100) * 100
+
+
+def concession_step(game: dict[str, Any]) -> int:
+    """L2 v3: the largest drop between two of the model's counteroffers, 2 % of the list price.
+
+    v2 gave the model a lowest quote and it walked straight to it: median seller surplus fell
+    from 39 % to 18 % on the same floors (week 6). Pacing is the hypothesis for v3."""
+    return max(100, int(round(game["list_price_usd"] * 0.02, -2)))
 
 
 def _intent_matches_deal(turn: SellerTurn, deal: dict[str, Any] | None) -> SellerTurn | None:
