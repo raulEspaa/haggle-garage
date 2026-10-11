@@ -1,5 +1,10 @@
 # 07 — Threat Model
 
+> **As built (2026-10-11).** The home MCP server was not built ([ADR-0002](adr/0002-home-mcp-ingress.md),
+> deferred), so §4.3 and §6 describe a design only. Gemini runs on Vertex AI, which has no hard
+> spend cap ([ADR-0013](adr/0013-gemini-on-vertex-ai.md)): §5 lists the limits that replaced it.
+> Every production guardrail was verified from outside: [results/deploy-checklist.md](results/deploy-checklist.md).
+
 Method: assets → actors → trust boundaries → threats (mapped to STRIDE and the **OWASP Top 10 for LLM Applications 2025**) → mitigations → how each mitigation is verified.
 
 **Core stance:** the LLM reads attacker-controlled text. Treat **everything it produces** (messages and tool calls) as untrusted input to our code. Security must not depend on prompt secrecy: the prompts are in a public repo.
@@ -87,7 +92,7 @@ Likelihood (L) and impact (I) are rated H/M/L.
 | T15 | Floor-guess brute force | Info disclosure | M/L | One guess per game (ends it). Per-IP game limit. Floor random per game. | API tests |
 | T16 | Transcript scraping | Info disclosure | L/L | No listing endpoint. `GET /api/games/{id}` requires the token. | API tests |
 
-### 4.3 Exposure of your home server
+### 4.3 Exposure of your home server (design only: not built)
 
 | ID | Threat | STRIDE | L/I | Mitigations | Verified by |
 |----|--------|--------|-----|-------------|-------------|
@@ -116,18 +121,18 @@ Likelihood (L) and impact (I) are rated H/M/L.
 
 From the cheapest to the strongest, outermost first:
 
-1. **Per IP:** 5 games/day, 30 messages/hour, 2 AI-vs-AI matches/day.
+1. **Per IP:** 5 games/day, 30 messages/hour.
 2. **Per game:** 12 turns, 500-char messages, `max_output_tokens` ≈ 300, templated greeting (no LLM call at game creation), single-flight.
-3. **Global:** 60 games/hour, 20 AI-vs-AI matches/day.
-4. **Daily soft budget:** `SUM(llm_usage.est_cost_usd)` since 00:00 UTC ≥ **1.00 USD** → api returns 503. The seller checks it too (`before_model_callback`).
-5. **Concurrency ceiling:** Cloud Run `max-instances` (api 3, seller 3, mcp 2).
-6. **Provider hard caps:** AI Studio **project spend cap** (monthly, ~10 min enforcement lag) + **prepaid credit** + Tier 1 spend-based limit (10 USD per 10 minutes) **[verified]**.
-7. **Alerts:** GCP budget at 50/90/100%. AI Studio spend page.
+3. **Global:** 60 games/hour.
+4. **Daily soft budget:** `SUM(llm_usage.est_cost_usd)` since 00:00 UTC ≥ **2.00 USD** in production → api returns 503. The seller checks it too (`before_model_callback`).
+5. **Concurrency ceiling:** Cloud Run `max-instances` = 2 per service.
+6. **No provider hard cap:** Vertex AI bills per call ([ADR-0013](adr/0013-gemini-on-vertex-ai.md)). The original plan used an AI Studio prepaid spend cap here.
+7. **Alerts:** GCP budget of 10 EUR/month, e-mails at 50/90/100%.
 8. **Kill switch:** the `DEMO_ENABLED=false` env var makes the api return 503 for game creation and messages (one `gcloud run services update` command, documented in the README).
 
-Worst case per month = the prepaid credit (default 10 USD).
+Worst case per day ≈ the daily budget (2 USD) plus the requests already in flight when it trips; the budget alert catches anything else.
 
-## 6. Home LXC hardening checklist (Week 8)
+## 6. Home LXC hardening checklist (design only: not built)
 
 - [ ] Unprivileged container. `nesting=0`. No bind mounts from the host.
 - [ ] Minimal Debian. `unattended-upgrades` enabled.
@@ -142,8 +147,7 @@ Worst case per month = the prepaid credit (default 10 USD).
 
 - L1 and L2 **will** leak. That is the point of the game.
 - Built-in policy leakage: a patient buyer learns roughly where the floor is. Bounded by the random margin and measured (`FEE_policy`).
-- Cloudflare terminates TLS for home traffic. Acceptable: synthetic data.
-- Spend caps act with ~10 min lag. Bounded by the prepaid credit.
+- No hard provider spend cap. Bounded by our daily budget, max instances and the budget alert.
 - Same-vendor judge bias in the evals. Mitigated by human calibration.
 
 ## 8. Incident playbook (short)
@@ -151,6 +155,5 @@ Worst case per month = the prepaid credit (default 10 USD).
 | Signal | Action |
 |--------|--------|
 | Budget alert or unusual spend | Flip the kill switch → inspect `llm_usage` by IP hash and hour → tighten limits → re-enable. |
-| A key appears in logs or the repo | Rotate in AI Studio / Secret Manager → redeploy → purge from git history if committed. |
-| Suspicious traffic at home | Revoke the Access service token and stop the CT. Games fall back to Cloud Run automatically. |
+| A secret appears in logs or the repo | Add a new version in Secret Manager (`make deploy-secrets`, or `haggle-provision-roles` for DB passwords) → redeploy → purge from git history if committed. |
 | A new leak technique is found by a player | Add it to `attacks.yaml` and `regressions.yaml`, re-run evals, and write about it (it's content!). |

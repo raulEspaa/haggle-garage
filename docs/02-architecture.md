@@ -1,12 +1,17 @@
 # 02 — Architecture
 
+> **As built (2026-10-11).** This is the architecture that runs in production. Two pieces of the
+> Phase 1 design were **not built**: the home MCP server with failover ([ADR-0002](adr/0002-home-mcp-ingress.md),
+> deferred) and the "watch AI vs AI" web mode (§5). Gemini is reached through **Vertex AI**
+> ([ADR-0013](adr/0013-gemini-on-vertex-ai.md)), not AI Studio.
+
 ## 1. Principles
 
 | # | Principle | Consequence in the design |
 |---|-----------|---------------------------|
 | P1 | **The model talks, code decides.** | Prices (L3) and closing (all levels) are decided by the MCP policy engine and validated by ADK callbacks. The LLM only verbalizes. |
-| P2 | **The demo cannot depend only on the home lab.** | MCP is stateless (all state is in Postgres), so the same image runs at home or on Cloud Run. The database is managed (Neon), not at home. |
-| P3 | **Public demo with a turn cap, per-IP limits and a maximum budget.** | Defense in layers: API limits → seller budget guard → provider hard spend cap. See [07-threat-model.md](07-threat-model.md). |
+| P2 | **Stateless services, state in Postgres.** | MCP keeps no state, so the same image can run anywhere (Cloud Run today; a home server was designed in ADR-0002). The database is managed (Neon). |
+| P3 | **Public demo with a turn cap, per-IP limits and a maximum budget.** | Defense in layers: API limits → seller budget guard → max instances + GCP budget alert (Vertex AI has no hard cap). See [07-threat-model.md](07-threat-model.md). |
 | P4 | **Synthetic data only** for anything personal or commercial. | Real car models with sourced public facts; prices, listings and dealer notes are fictional ([ADR-0011](adr/0011-real-iconic-cars.md)). |
 | P5 | **Trusted context never passes through the LLM.** | The game id travels in headers set by code ([ADR-0008](adr/0008-trusted-context-headers.md)). |
 | P6 | **Thin wrappers around fast-moving frameworks.** | ADK A2A is *experimental*, MCP SDK v2 has breaking renames, A2A is now 1.0. Every framework call sits behind a small module of ours, and shared types live in `haggle-core`. |
@@ -21,47 +26,38 @@ flowchart LR
     subgraph gcp["Google Cloud Run · europe-west1"]
         api["api<br/>FastAPI · web page · REST<br/>rate limits · budget gate"]
         seller["seller<br/>ADK LlmAgent exposed with to_a2a()<br/>guards as callbacks"]
-        mcpCloud["mcp (fallback)<br/>MCP server · policy engine · RAG"]
+        mcpCloud["mcp<br/>MCP server · policy engine · RAG"]
     end
 
-    subgraph home["Home lab · Proxmox LXC · behind CGNAT"]
-        cloudflared["cloudflared<br/>(outbound only)"]
-        mcpHome["mcp (primary)<br/>same code and image"]
-    end
-
-    cfEdge["Cloudflare edge<br/>Tunnel + Access"]
     buyer["buyer<br/>LangGraph graph<br/>(library + CLI)"]
     evals["evals runner<br/>(your laptop)"]
     db[("Neon Postgres<br/>+ pgvector")]
-    gemini["Gemini API"]
+    gemini["Gemini on Vertex AI"]
     langfuse["Langfuse Cloud"]
 
     player -->|HTTPS| api
     api -->|"A2A JSON-RPC"| seller
-    api -. "AI-vs-AI mode (in-process)" .-> buyer
     evals --> buyer
     buyer -->|"A2A JSON-RPC"| seller
-    seller -->|"MCP Streamable HTTP"| cfEdge
-    cfEdge --> cloudflared --> mcpHome
-    seller -. "failover" .-> mcpCloud
+    seller -->|"MCP Streamable HTTP"| mcpCloud
     buyer -->|"MCP: lookup_model_sheet only"| mcpCloud
 
     api --> db
     seller --> db
     mcpCloud --> db
-    mcpHome --> db
 
     seller --> gemini
     buyer --> gemini
     mcpCloud -->|embeddings| gemini
 
     seller -. "OTel spans" .-> langfuse
+    mcpCloud -. "OTel spans" .-> langfuse
     buyer -. "callback traces" .-> langfuse
 ```
 
 | Component | Tech | Responsibility | Does NOT |
 |-----------|------|----------------|----------|
-| **api** | FastAPI, Jinja2, httpx, a2a-sdk client | Serve the page. Create games (sample floor, templated greeting). Proxy human messages to the seller over A2A. Per-IP and global limits, single-flight per game, floor-guess, reveal. AI-vs-AI streaming. | Call the LLM directly. Decide prices. |
+| **api** | FastAPI, Jinja2, httpx, a2a-sdk client | Serve the page. Create games (sample floor, templated greeting). Proxy human messages to the seller over A2A. Per-IP and global limits, single-flight per game, floor-guess, reveal. | Call the LLM directly. Decide prices. |
 | **seller** | google-adk (`LlmAgent`, `to_a2a`, `DatabaseSessionService`), McpToolset | Negotiate. Load game context, reserve the turn atomically, apply guards, write transcript turns and LLM usage. | Know the floor at L3. Accept games it didn't receive from the API. |
 | **mcp** | MCP Python SDK v2 (`MCPServer`), SQLAlchemy, pgvector | Run the policy engine with the secret floor (concession curve, accept/counter/reject), validate and record deals, RAG search. | Talk to users. Trust any LLM-provided identity. |
 | **buyer** | LangGraph, MCP SDK client ([ADR-0012](adr/0012-buyer-mcp-sdk-client.md)), a2a-sdk client | Appraise the listing, plan offers per persona, guard its own budget, talk to the seller over A2A, estimate the floor at the end. | Run as a server (no Agent Server). |
@@ -87,7 +83,7 @@ Where each guard lives (component · mechanism):
 | `close_deal` requires a matching prior **accept** (L3), or the price present in the buyer's last message (L1–L2) | ● | ● | ● | mcp (L3) / seller `before_tool_callback` (L1–L2) |
 | Turn cap, game expiry | ● | ● | ● | seller (atomic turn reservation) + api |
 | Daily soft budget | ● | ● | ● | api (before forwarding) + seller `before_model_callback` |
-| Hard provider spend cap | ● | ● | ● | AI Studio project spend cap + prepaid credit |
+| Spend ceiling | ● | ● | ● | Cloud Run max instances + GCP budget alert. Vertex AI has no hard cap ([ADR-0013](adr/0013-gemini-on-vertex-ai.md)) |
 
 L1 still cannot **sell** below the floor. It can only **say** it would. That gap is what the "invalid sale" metrics measure ([06](06-evaluation-plan.md)).
 
@@ -100,8 +96,8 @@ sequenceDiagram
     participant API as api (Cloud Run)
     participant DB as Postgres (Neon)
     participant S as seller (ADK, Cloud Run)
-    participant G as Gemini API
-    participant M as mcp (home or fallback)
+    participant G as Gemini (Vertex AI)
+    participant M as mcp (Cloud Run)
     participant LF as Langfuse
 
     P->>API: POST /api/games/{id}/messages {text} + X-Game-Token
@@ -113,7 +109,7 @@ sequenceDiagram
     S->>G: generate (system prompt + history + tools, output schema SellerTurn)
     G-->>S: function_call evaluate_offer(offer_usd = 27000)
     S->>S: before_tool: 27000 appears in buyer's last message?
-    S->>M: tools/call evaluate_offer + headers X-Haggle-Token, X-Haggle-Game-Id
+    S->>M: tools/call evaluate_offer + Google ID token, X-Haggle-Token, X-Haggle-Game-Id
     M->>DB: read floor, policy, turn. Write negotiation_event
     M-->>S: {decision: counter, counter_usd: 31500, final_offer: false}
     S->>S: after_tool: remember code-issued numbers in session state
@@ -128,7 +124,10 @@ sequenceDiagram
 
 Closing at L3: the buyer says "OK, 31,500". The LLM calls `evaluate_offer(31500)`, which returns `accept` because 31,500 ≥ the current target. It then calls `close_deal(31500)`. The MCP checks for an `accept` event with that amount, inserts the `deals` row and sets `games.status = 'deal'` in **one transaction**.
 
-## 5. Sequence: AI-vs-AI match and MCP failover (summary)
+## 5. Not built: AI-vs-AI web mode and MCP failover
+
+> Kept as a design for [future work](05-delivery.md#8-future-work). Today the buyer agent runs from
+> the CLI (`make buyer`) and in the evals, and the seller always uses the Cloud Run MCP server.
 
 ```mermaid
 sequenceDiagram
@@ -155,7 +154,7 @@ sequenceDiagram
     B-->>API: outcome + floor estimate
 ```
 
-**Failover rule:** the backend is chosen once per game at its first turn, and the game sticks to it. If a tool call fails mid-game, the seller answers with a short "connection issue, please repeat" message and switches that game to the other backend for the next turn. This is safe because MCP keeps no state. The selection lives in a small `McpBackendSelector` and a custom toolset wrapper (see spike list). MVP ships with a single backend (Cloud Run). The selector is added in Week 8.
+**Failover rule:** the backend is chosen once per game at its first turn, and the game sticks to it. If a tool call fails mid-game, the seller answers with a short "connection issue, please repeat" message and switches that game to the other backend for the next turn. This is safe because MCP keeps no state. The selection lives in a small `McpBackendSelector` and a custom toolset wrapper (see spike list). The project shipped with a single backend (Cloud Run); the selector was cut in week 8.
 
 ## 6. Game state machine
 
@@ -189,64 +188,58 @@ Every transition is a conditional update: `UPDATE games SET status = $new WHERE 
 | `llm_usage` | seller, buyer, evals | api (budget gate) | Cost estimate per call. |
 | ADK session tables (schema `adk`) | seller (ADK) | — | Created by `DatabaseSessionService`. |
 
-DB roles (Should, Week 7): `haggle_api`, `haggle_seller`, `haggle_mcp`, `haggle_admin`. The seller role reads games only through the view `seller_game_context`, which returns `floor_usd = NULL` when `level = 3`. Grants are in [03-contracts.md §5.3](03-contracts.md#53-roles-and-grants).
+DB roles (built in week 7 by `haggle-provision-roles`): `haggle_api`, `haggle_seller`, `haggle_mcp`; migrations run as the owner. The seller role reads games only through the view `seller_game_context`, which returns `floor_usd = NULL` when `level = 3`. Grants are in [03-contracts.md §5.3](03-contracts.md#53-roles-and-grants).
 
 ## 8. Deployment
 
 ```mermaid
 flowchart TB
-    subgraph dev["Your laptop"]
-        tf["terraform apply"]
-        dockerBuild["docker build + push"]
+    subgraph dev["Laptop"]
+        make["make deploy<br/>(clean tree only)"]
         evalsRun["evals runner"]
     end
 
     subgraph gh["GitHub"]
         repo["repo (public)"]
-        ci["Actions: lint, types, tests,<br/>terraform validate"]
+        ci["Actions: lint, types, tests,<br/>terraform validate, gitleaks"]
     end
 
-    subgraph gcpProj["GCP project haggle-prod · europe-west1"]
-        ar["Artifact Registry<br/>(cleanup: keep last 3)"]
-        sm["Secret Manager<br/>gemini key, langfuse keys,<br/>db urls, mcp tokens, cf token"]
-        runApi["Cloud Run: api<br/>public · SA api-sa<br/>max instances 3"]
-        runSeller["Cloud Run: seller<br/>IAM-only · SA seller-sa<br/>max instances 3"]
-        runMcp["Cloud Run: mcp<br/>IAM-only · SA mcp-sa<br/>max instances 2"]
-        budget["Billing budget<br/>alerts 50/90/100%"]
+    subgraph gcpProj["GCP project haggle-prod · europe-west1 (Terraform)"]
+        ar["Artifact Registry<br/>images tagged with the git sha"]
+        sm["Secret Manager<br/>db urls, mcp tokens, langfuse keys,<br/>ip-hash salt, canary"]
+        runApi["Cloud Run: haggle-api<br/>public · SA haggle-api"]
+        runSeller["Cloud Run: haggle-seller<br/>IAM-only · SA haggle-seller"]
+        runMcp["Cloud Run: haggle-mcp<br/>IAM-only · SA haggle-mcp"]
+        vertex["Vertex AI<br/>Gemini + embeddings"]
+        budget["Budget alert<br/>10 EUR/month"]
         gcs["GCS bucket<br/>terraform state"]
     end
 
-    subgraph homeLab["Home · Proxmox VE (i5-13500T, 16 GB)"]
-        lxc["LXC mcp-home (unprivileged)<br/>1 vCPU · 1 GB RAM<br/>systemd: mcp + cloudflared"]
-        ts["Tailscale (admin access only)"]
-    end
-
-    neon[("Neon · aws-eu-central-1<br/>Postgres + pgvector")]
-    cf["Cloudflare<br/>Tunnel + Access (Service Auth)"]
-    aistudio["AI Studio project haggle-prod<br/>prepaid + monthly spend cap"]
+    neon[("Neon · aws-eu-central-1<br/>Postgres + pgvector<br/>one role per service")]
     lf["Langfuse Cloud EU"]
 
     repo --> ci
-    dockerBuild --> ar
-    tf --> gcpProj
-    tf -. state .-> gcs
+    make -->|"docker build + push"| ar
+    make -->|"terraform apply"| gcpProj
+    make -. state .-> gcs
     ar --> runApi & runSeller & runMcp
     sm --> runApi & runSeller & runMcp
-    runApi -->|"ID token (run.invoker)"| runSeller
-    runSeller -->|"ID token (run.invoker)"| runMcp
-    runSeller -->|"CF service token"| cf --> lxc
+    runApi -->|"ID token, aud haggle-seller"| runSeller
+    runSeller -->|"ID token, aud haggle-mcp + app token"| runMcp
     runApi & runSeller & runMcp --> neon
-    lxc --> neon
-    runSeller --> aistudio
-    runSeller -.-> lf
+    runSeller & runMcp -->|"service account (ADC)"| vertex
+    runSeller & runMcp -.-> lf
 ```
+
+Every service scales to zero and is capped at 2 instances. Evidence that each guardrail holds
+in production: [results/deploy-checklist.md](results/deploy-checklist.md).
 
 ### Environments
 
 | Env | How it runs | LLM project | DB |
 |-----|-------------|-------------|----|
-| **local** | `docker compose up` (db, mcp, seller, api) + `uv run` for buyer/evals | AI Studio **dev** (free tier, synthetic data only) | `pgvector/pgvector` container |
-| **prod** | Cloud Run ×3 + home LXC | AI Studio **prod** (prepaid, spend cap) | Neon |
+| **local** | `docker compose up` (db, mcp, seller, api) + `uv run` for buyer/evals | Vertex AI with your `gcloud` ADC | `pgvector/pgvector` container |
+| **prod** | Cloud Run ×3 | Vertex AI with each service's account | Neon |
 
 There is no staging. For a one-person demo, `local` and `prod` are enough. Terraform keeps prod reproducible.
 
@@ -256,18 +249,17 @@ There is no staging. For a one-person demo, `local` and `prod` are enough. Terra
 - **Seller**: OpenTelemetry via `openinference-instrumentation-google-adk`, exported to Langfuse. **Buyer**: Langfuse `CallbackHandler` with `metadata.langfuse_session_id = game_id`.
 - **Tags on every trace**: `level`, `prompt_version`, `model_id`, `mcp_backend`, `git_sha`, `persona` (agent games), `eval_run_id` (evals).
 - **Logs**: JSON to stdout (Cloud Logging picks them up for free). Never log the floor or tokens. Log `floor_bucket` (L/M/H) if needed.
-- **Sampling**: 100% for evals. Demo traffic sampled at 25% if the Langfuse 50k units/month becomes tight ([08](08-risks-and-costs.md)).
+- **Sampling**: 100% for evals. Demo traffic sampled at 25% if the Langfuse 50k units/month becomes tight ([05 §3](05-delivery.md#3-costs-estimated-vs-measured)).
 
 ## 10. Failure modes
 
 | Failure | Detection | Behaviour |
 |---------|-----------|-----------|
-| Home MCP down or tunnel down | health check at the game's first turn, tool error mid-game | Game sticks to Cloud Run MCP. Mid-game: one apology turn, then switch. |
 | Neon cold start (scale-to-zero after 5 min) | latency on first query | Accept the latency (expected under 1 s, [unverified]). The page shows "warming up". |
-| Seller cold start (ADK import is heavy) | first-request latency | Startup CPU boost. The page pings `/health` on load to pre-warm. min-instances = 0 to keep cost at 0. |
+| Seller cold start (ADK import is heavy) | first-request latency | Startup CPU boost. min-instances = 0 keeps the idle cost at 0; the first turn after a quiet spell takes a few seconds longer. |
 | Gemini 429 / 5xx | SDK error | One retry with backoff, then "the dealer stepped out, try again" (turn not consumed). |
 | Daily soft budget exhausted | api check before forwarding | 503 + friendly "demo closed until tomorrow" page. |
-| Provider hard cap hit | 429 from Gemini | Same as above. Budget alert email. |
+| GCP budget alert | e-mail at 50/90/100 % of 10 EUR/month | Manual: lower the daily budget or scale the services to zero. |
 | A2A or MCP contract drift after an upgrade | contract tests in CI (schema snapshots) | CI fails before deploy. |
 
 ## 11. Spikes (de-risk before building on them)

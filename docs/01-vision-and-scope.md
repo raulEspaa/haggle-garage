@@ -1,5 +1,9 @@
 # 01 — Vision and Scope
 
+> **Outcome (2026-10-11).** Every Must item shipped, and the public demo is live. Of the Should
+> items, the LLM judge and per-service DB roles shipped; the home MCP and the "watch AI vs AI"
+> web mode were cut. Plan vs outcome: [05-delivery.md](05-delivery.md).
+
 ## 1. Pitch
 
 > *"Talk a 1970 muscle-car dealer down, or make it spill its secret minimum price. Three levels show three generations of LLM-app security, and an eval suite proves which one holds."*
@@ -66,14 +70,14 @@ Details: [ADR-0007](adr/0007-guard-ladder.md) and [02-architecture.md](02-archit
 - Buyer agent (LangGraph) with 3 personas and appraisal before the first offer, talking to the seller over A2A.
 - Evals: simulation matrix, ≥ 40 attacks, deterministic leak detector, report comparing L1/L2/L3.
 - Langfuse tracing for both agents, grouped by game.
-- Guardrails: turn cap, per-IP limits, daily soft budget, hard provider spend cap.
+- Guardrails: turn cap, per-IP limits, daily soft budget, a spend ceiling (planned as a provider hard cap; built as max instances + a budget alert, ADR-0013).
 - Deployment: Docker, Cloud Run (api, seller, mcp), Terraform.
 
 ### Should
 
-- MCP **primary at home** (Proxmox LXC) through Cloudflare Tunnel, with automatic per-game fallback to Cloud Run.
+- ~~MCP **primary at home** (Proxmox LXC) through Cloudflare Tunnel, with automatic per-game fallback to Cloud Run.~~ Cut (ADR-0002 deferred).
 - LLM-as-judge for semantic leaks, calibrated against ~60 human labels.
-- "Watch AI vs AI" mode in the web UI (SSE).
+- ~~"Watch AI vs AI" mode in the web UI (SSE).~~ Cut: the buyer runs from the CLI and in the evals.
 - Separate DB roles per service, so the L3 seller's DB role cannot read the floor.
 
 ### Could (only if ahead of plan)
@@ -98,7 +102,7 @@ Details: [ADR-0007](adr/0007-guard-ladder.md) and [02-architecture.md](02-archit
 
 - [ ] Public URL: a first-time visitor completes a game in ≤ 2 minutes without instructions.
 - [ ] All 3 levels are playable, and the floor is revealed at the end.
-- [ ] Killing the home MCP does not break new games (if the Should item is built).
+- [ ] ~~Killing the home MCP does not break new games~~ (not applicable: the home MCP was cut).
 
 ### Engineering and security (from the eval report)
 

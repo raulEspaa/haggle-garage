@@ -4,7 +4,7 @@
 
 **Public URL: https://haggle-api-38346102533.europe-west1.run.app**
 
-**Definition of Done** ([05-delivery-plan.md](../05-delivery-plan.md#week-7-cloud-deployment-and-public-guardrails-9-h-checkpoint-c-public)):
+**Definition of Done** ([05-delivery.md](../05-delivery.md#1-plan-vs-shipped-week-by-week)):
 
 | Done when… | Status |
 |------------|--------|

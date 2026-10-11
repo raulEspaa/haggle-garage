@@ -3,7 +3,7 @@
 > **Goal:** a seller that negotiates over A2A with a real LLM, at three security levels, with
 > every decision that matters taken or checked by code, and facts retrieved from the model sheets.
 
-**Definition of Done** ([05-delivery-plan.md](../05-delivery-plan.md#week-3-seller-agent-and-rag-95-h)):
+**Definition of Done** ([05-delivery.md](../05-delivery.md#1-plan-vs-shipped-week-by-week)):
 
 | Done when… | Status |
 |------------|--------|
@@ -27,7 +27,7 @@ question ──embed──▶ cosine nearest neighbours (HNSW) ──▶ top-3 c
 |---------------|-----|
 | One chunk per section | The sheets are written so each section stands alone. Fixed-size windows would cut sentences and mix topics |
 | `Embedder` as a `typing.Protocol` | Structural typing (≈ an interface without `implements`). `GeminiEmbedder` in production, `FakeEmbedder` (hashed bag-of-words) in tests: no network, no cost |
-| Asymmetric formats `title: … \| text: …` vs `task: search result \| query: …` | gemini-embedding-2 takes the task as text inside the input (docs/10-sources.md) |
+| Asymmetric formats `title: … \| text: …` vs `task: search result \| query: …` | gemini-embedding-2 takes the task as text inside the input (docs/05-delivery.md) |
 | Embed **before** opening the DB transaction | Never hold a transaction open while waiting on the network |
 
 ### Two lessons from measuring

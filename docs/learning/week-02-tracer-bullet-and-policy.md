@@ -4,7 +4,7 @@
 > then build the part of the system that must never be wrong: the code that decides prices and
 > deals.
 
-**Definition of Done** ([05-delivery-plan.md](../05-delivery-plan.md#week-2-tracer-bullet-and-policy-engine-9-h)):
+**Definition of Done** ([05-delivery.md](../05-delivery.md#1-plan-vs-shipped-week-by-week)):
 
 | Done when… | Status |
 |------------|--------|

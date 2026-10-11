@@ -1,6 +1,6 @@
 """Estimated cost of LLM calls (Gemini API paid tier, standard, USD per 1M tokens).
 
-Source: https://ai.google.dev/gemini-api/docs/pricing (verified 2026-10-08, docs/10-sources.md).
+Source: https://ai.google.dev/gemini-api/docs/pricing (verified 2026-10-08, docs/05-delivery.md).
 Used by the daily soft budget (docs/07-threat-model.md §5). Development on the free tier still
 records the *equivalent* paid cost, so budget logic is exercised before launch.
 """

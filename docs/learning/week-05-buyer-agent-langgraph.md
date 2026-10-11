@@ -5,7 +5,7 @@
 > estimates the secret floor at the end. Built with a second framework (LangGraph), so the
 > project shows MCP and A2A working **across** frameworks.
 
-**Definition of Done** ([05-delivery-plan.md](../05-delivery-plan.md#week-5-buyer-agent-with-langgraph-9-h)):
+**Definition of Done** ([05-delivery.md](../05-delivery.md#1-plan-vs-shipped-week-by-week)):
 
 | Done when… | Status |
 |------------|--------|

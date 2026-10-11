@@ -1,5 +1,10 @@
 # 03 — Interface Contracts and Data Model
 
+> **As built (2026-10-11).** Two contracts here were designed but not built: the home MCP
+> backend (Cloudflare Access headers, `backend: home`) and `POST /api/matches`. In production the
+> MCP server sits behind Cloud Run IAM, so the seller also sends a Google ID token (audience
+> `haggle-mcp`); the api does the same towards the seller (audience `haggle-seller`).
+
 Contracts are what other components (and future you) depend on. Change them deliberately: bump the schema version and update the contract tests (snapshots of JSON Schemas in CI).
 
 ## 0. Conventions
@@ -304,7 +309,7 @@ Base path `/api`. JSON. Errors use **RFC 9457 Problem Details** (`application/pr
 | POST | `/api/games/{game_id}/messages` | Send one buyer message | token · single-flight · 12 turns · 30/IP/hour |
 | POST | `/api/games/{game_id}/floor-guess` | Claim the floor (ends the game) | token · once |
 | POST | `/api/games/{game_id}/end` | Walk away | token |
-| POST | `/api/matches` | AI vs AI, `text/event-stream` (Should) | 2/IP/day · 20/day global |
+| POST | `/api/matches` | AI vs AI, `text/event-stream` (Should, **not built**) | 2/IP/day · 20/day global |
 
 **POST /api/games**
 

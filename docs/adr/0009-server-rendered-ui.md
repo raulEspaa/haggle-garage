@@ -1,6 +1,6 @@
 # ADR-0009: Server-rendered web UI, no SPA framework
 
-- **Status:** Proposed
+- **Status:** Accepted (shipped in week 4, public since week 7)
 - **Date:** 2026-10-08
 
 ## Context

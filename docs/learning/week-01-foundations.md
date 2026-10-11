@@ -4,7 +4,7 @@
 > quality gate already in place. Features come later. The *path to production* is built first.
 > This is called a **walking skeleton**.
 
-**Status of the Definition of Done** ([05-delivery-plan.md](../05-delivery-plan.md#week-1-foundations-and-walking-skeleton-9-h)):
+**Status of the Definition of Done** ([05-delivery.md](../05-delivery.md#1-plan-vs-shipped-week-by-week)):
 
 | Done when… | Status |
 |------------|--------|
@@ -240,7 +240,7 @@ Usage: `uv run haggle-seed`. The command exists because of `[project.scripts]` i
 
 ### The database test pattern
 
-[`conftest.py`](../../packages/core/tests/conftest.py) is where shared fixtures live.
+[`conftest.py`](../../conftest.py) is where shared fixtures live.
 
 1. **Safety net:** DB tests refuse to run unless the database name ends in `_test`, because the
    fixture **drops the whole schema**. Pointing tests at a real DB by mistake is a classic
@@ -384,8 +384,8 @@ Validated locally with Terraform **1.16.5**: `fmt` clean, `validate` → *Succes
 
 ### 12.1 Install the tools (≈ 20 min)
 
-Follow **[setup-tools.md](setup-tools.md)**: Docker, Terraform, gcloud and gh from the vendors'
-apt repositories (all verified for Ubuntu 26.04), plus git identity, gh and gcloud logins.
+Install Docker, Terraform, gcloud and gh from the vendors' official apt repositories, then set
+your git identity and log in to gh and gcloud.
 `make doctor` tells you what is still missing. Then verify the local stack end to end:
 
 ```bash

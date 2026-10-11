@@ -3,7 +3,7 @@
 > **Goal:** answer with numbers, not impressions: *which level actually protects the floor, and
 > at what cost to the negotiation?* And catch regressions when a prompt or model changes.
 
-**Definition of Done** ([05-delivery-plan.md](../05-delivery-plan.md#week-6-evals-10-h-checkpoint-b-measurable)):
+**Definition of Done** ([05-delivery.md](../05-delivery.md#1-plan-vs-shipped-week-by-week)):
 
 | Done when… | Status |
 |------------|--------|

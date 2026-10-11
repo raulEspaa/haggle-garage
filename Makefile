@@ -18,7 +18,7 @@ doctor: ## Check that every required tool is installed and configured
 	@for t in uv git make docker terraform gcloud gh; do \
 		if command -v $$t >/dev/null 2>&1; then \
 			printf "  \033[32m✓\033[0m %-10s %s\n" $$t "$$($$t --version 2>&1 | head -1)"; \
-		else printf "  \033[31m✗\033[0m %-10s not installed (docs/learning/setup-tools.md)\n" $$t; fi; \
+		else printf "  \033[31m✗\033[0m %-10s not installed (see the vendor's install guide)\n" $$t; fi; \
 	done
 	@if docker compose version >/dev/null 2>&1; then echo "  ✓ docker compose plugin"; \
 		else echo "  ✗ docker compose plugin missing"; fi

@@ -41,7 +41,7 @@ from haggle_core.domain import (
     TurnRole,
 )
 
-EMBEDDING_DIMS = 768  # gemini-embedding-2 truncated to 768 dims (ADR-0005, docs/10-sources.md)
+EMBEDDING_DIMS = 768  # gemini-embedding-2 truncated to 768 dims (ADR-0005, docs/05-delivery.md)
 
 
 def one_of(column: str, values: type[Enum]) -> str:

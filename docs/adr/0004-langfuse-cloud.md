@@ -1,6 +1,6 @@
 # ADR-0004: Langfuse Cloud (Hobby) over self-hosted Langfuse
 
-- **Status:** Proposed
+- **Status:** Accepted (in use since week 3; production traces since week 7)
 - **Date:** 2026-10-08
 
 ## Context

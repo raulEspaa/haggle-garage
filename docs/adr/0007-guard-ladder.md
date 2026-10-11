@@ -1,6 +1,6 @@
 # ADR-0007: Guard ladder — the model talks, code decides
 
-- **Status:** Proposed. Confirm assumption A12.
+- **Status:** Accepted (implemented weeks 3–6; measured in the [eval results](../results/README.md))
 - **Date:** 2026-10-08
 
 ## Context

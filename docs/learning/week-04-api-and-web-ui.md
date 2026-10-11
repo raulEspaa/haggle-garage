@@ -4,7 +4,7 @@
 > to the seller over A2A, and the API is ready to face the public internet: limits, budget,
 > tokens, input hygiene, strict CSP.
 
-**Definition of Done** ([05-delivery-plan.md](../05-delivery-plan.md#week-4-api-and-web-ui-9-h-checkpoint-a-playable-locally)):
+**Definition of Done** ([05-delivery.md](../05-delivery.md#1-plan-vs-shipped-week-by-week)):
 
 | Done when… | Status |
 |------------|--------|

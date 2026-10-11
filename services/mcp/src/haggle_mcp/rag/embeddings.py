@@ -29,7 +29,7 @@ class Embedder(Protocol):
 
 
 class GeminiEmbedder:
-    """gemini-embedding-2 at 768 dims (auto-renormalized, docs/10-sources.md).
+    """gemini-embedding-2 at 768 dims (auto-renormalized, docs/05-delivery.md).
 
     This model takes the task as an instruction inside the text instead of a task_type
     parameter: documents are formatted "title: ... | text: ...", queries

@@ -1,6 +1,6 @@
 # ADR-0002: Home MCP ingress — Cloudflare Tunnel + Access; Tailscale for admin only
 
-- **Status:** Proposed. Depends on open decision #1 (domain).
+- **Status:** Deferred (2026-10-11). Designed, not built: the home server was cut in week 8 (first item of the cut list). The Cloud Run MCP server is the only backend; the design stays here for a future version.
 - **Date:** 2026-10-08
 
 ## Context
@@ -37,7 +37,7 @@ Your threat model explicitly includes "exposure of my server". A blocks attacker
 ## Consequences
 
 - One more secret pair (CF service token) in Secret Manager. Service tokens have an expiry, so set a calendar reminder; Cloudflare emails a week before.
-- The seller uses different outer auth per backend (CF headers for home, Google ID token for Cloud Run). The selector handles it ([02 §5](../02-architecture.md#5-sequence-ai-vs-ai-match-and-mcp-failover-summary)).
+- The seller uses different outer auth per backend (CF headers for home, Google ID token for Cloud Run). The selector handles it ([02 §5](../02-architecture.md#5-not-built-ai-vs-ai-web-mode-and-mcp-failover)).
 - Streamable HTTP responses may use SSE. Named tunnels support it (quick tunnels don't) **[verify in Week 8]**.
 
 ## Revisit if
