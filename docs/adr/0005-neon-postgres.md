@@ -1,6 +1,6 @@
 # ADR-0005: Neon Postgres (free tier) as the single shared database
 
-- **Status:** Proposed
+- **Status:** Accepted (2026-10-11, week 7: Neon Free, Postgres 17, eu-central-1; one role per service)
 - **Date:** 2026-10-08
 
 ## Context

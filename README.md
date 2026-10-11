@@ -4,7 +4,8 @@ Negotiate with an AI used-car dealer, or make it leak its secret minimum price.
 A portfolio project about agents (Google ADK, LangGraph), protocols (MCP, A2A), RAG, evals and
 LLM security, deployed on Cloud Run.
 
-> **Status:** Week 6 of 8. Measured: L1 states its secret floor in 22% of simulated games; L2 and L3 in 0%, and both stop all 44 scripted attacks ([results](docs/results/README.md)).
+> **Play it:** https://haggle-api-38346102533.europe-west1.run.app · **Status:** week 7 of 8, deployed on Cloud Run.
+> Measured: L1 states its secret floor in 22% of simulated games; L2 and L3 in 0%, and both stop all 44 scripted attacks ([results](docs/results/README.md)).
 
 ## Quickstart (local)
 
@@ -32,6 +33,6 @@ docker compose up --build   # mcp + seller + api: play at http://127.0.0.1:8080
 | `services/seller` | ADK seller agent exposed over A2A, guards as callbacks, terminal game (`make play`) |
 | `spikes/` | Throwaway experiments that de-risked the design (`make spike`) |
 | `db/` | Alembic migrations, seed data, Postgres init scripts |
-| `infra/terraform` | GCP: Artifact Registry, Cloud Run, service accounts |
+| `infra/terraform` | GCP: 3 Cloud Run services, service accounts + IAM, Secret Manager, budget alert (`make deploy`) |
 | `docs/` | Architecture, ADRs, plans ([start here](docs/README.md)) |
 | `docs/learning/` | Step-by-step build journal: what was done each week and why |

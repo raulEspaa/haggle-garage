@@ -13,6 +13,7 @@ choice in an interview.
 | 4 | [week-04-api-and-web-ui.md](week-04-api-and-web-ui.md) | FastAPI public API, demo limits, single flight, strict CSP page, six bugs found only in Docker |
 | 5 | [week-05-buyer-agent-langgraph.md](week-05-buyer-agent-langgraph.md) | LangGraph buyer: state, reducers, structured output, code guard, personas, one trace across 3 processes |
 | 6 | [week-06-evals.md](week-06-evals.md) | Leak detector, LLM judge + κ, 44 attacks, 81-game matrix, Wilson CIs, a run that lied, L2 prompt v1→v3 |
+| 7 | [week-07-cloud-deploy.md](week-07-cloud-deploy.md) | Cloud Run ×3, IAM + ID tokens, Secret Manager, Neon roles per service, four production bugs |
 
 How to use them:
 

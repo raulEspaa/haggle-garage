@@ -63,3 +63,10 @@ The code stays backend-agnostic (`haggle_core.settings.gemini_configured()`): se
 
 - Before week 7's public deploy (spend cap), or when the trial credit runs low or expires.
 - If `langchain-google-genai` adopts `GOOGLE_GENAI_USE_ENTERPRISE`.
+
+## Week 7 follow-up (2026-10-11): the spend limits chosen for the public demo
+
+No hard cap exists on Vertex AI, so the limits are ours: a **$2/day game budget** enforced by
+both the api and the seller (they stop answering until the next UTC day), **2 instances per
+Cloud Run service**, per-IP limits (5 games/day, 30 messages/hour) and a **10 EUR/month GCP
+budget alert**. Evidence: [`docs/results/deploy-checklist.md`](../results/deploy-checklist.md).
