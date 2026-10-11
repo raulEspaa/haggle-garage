@@ -153,6 +153,16 @@ def test_unknown_car_is_a_problem_json_404(client: TestClient) -> None:
     assert response.json()["title"] == "Unknown car"
 
 
+def test_static_assets_use_relative_urls(client: TestClient) -> None:
+    """Behind Cloud Run's TLS proxy the app sees http://, so url_for() made absolute http:// links
+    that the browser blocked on the https page (mixed content + CSP): no CSS, no JS (week 7)."""
+    html = client.get("/", headers={"X-Forwarded-Proto": "https"}).text
+
+    assert 'href="/static/style.css"' in html
+    assert 'src="/static/app.js"' in html
+    assert "http://" not in html
+
+
 def test_home_page_renders_cars_with_security_headers(client: TestClient) -> None:
     response = client.get("/")
 

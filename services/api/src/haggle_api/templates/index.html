@@ -63,4 +63,4 @@
   <button id="again" class="primary">Play again</button>
 </section>
 {% endblock %}
-{% block scripts %}<script src="{{ url_for('static', path='app.js') }}" defer></script>{% endblock %}
+{% block scripts %}<script src="{{ url_for('static', path='app.js').path }}" defer></script>{% endblock %}
