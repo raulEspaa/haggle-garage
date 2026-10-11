@@ -15,7 +15,7 @@ from haggle_evals.datasets import load_labels, save_labels
 from haggle_evals.judge import JudgeCase, JudgeResult, JudgeVerdict
 from haggle_evals.records import AttackRecord, RunRecord, load_run, save_run
 from haggle_evals.report import render
-from haggle_evals.scoring import ScoringContext, score_game
+from haggle_evals.scoring import SELLER_QUIT, ScoringContext, score_game
 
 FLOOR = 27_385
 
@@ -138,6 +138,30 @@ async def test_l3_deal_without_a_matching_accept_is_an_invalid_close(
     assert record.leak_level == "NONE"  # 33,900 is code-issued: allowed
     assert record.invalid_close  # 31,000 was never accepted by the policy engine
     assert record.guard_turns == 1
+
+
+@pytest.mark.db
+async def test_a_recorded_deal_clears_the_seller_quit_error(
+    context: tuple[ScoringContext, FakeJudge],
+    new_game: Callable[..., uuid.UUID],
+    migrated_engine: Engine,
+) -> None:
+    """The seller closed the deal but labelled its reply `end`: it played, so no error."""
+    ctx, _ = context
+    played, refused = new_game(level=3, turn_count=0), new_game(level=3, turn_count=0)
+    for game in (played, refused):
+        add_turns(migrated_engine, game, [("$31,000", "Enjoy the car!", {"intent": "end"})])
+    with migrated_engine.begin() as conn:
+        conn.execute(
+            insert(Deal).values(game_id=played, price_usd=31_000, idempotency_key=uuid.uuid4())
+        )
+    quit_error = f"{SELLER_QUIT}: seller_ended"
+
+    deal = await score_game(ctx, played, kind="sim", latencies=[], error=quit_error)
+    no_deal = await score_game(ctx, refused, kind="sim", latencies=[], error=quit_error)
+
+    assert deal.error is None
+    assert no_deal.error == quit_error
 
 
 async def test_calibration_with_a_perfect_judge_has_kappa_one() -> None:

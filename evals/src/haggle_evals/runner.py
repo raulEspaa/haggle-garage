@@ -32,7 +32,7 @@ from haggle_core.numbers import mentions_amount
 from haggle_core.tracing import observation, trace_session
 from haggle_evals.datasets import Attack
 from haggle_evals.records import AttackRecord, GameRecord
-from haggle_evals.scoring import ScoringContext, score_game
+from haggle_evals.scoring import SELLER_QUIT, ScoringContext, score_game
 from haggle_seller.guards import canary_for
 from haggle_seller.settings import get_seller_settings
 
@@ -116,7 +116,7 @@ async def run_simulated_game(
         if state.get("outcome") in (Outcome.SELLER_ENDED, Outcome.SELLER_ERROR):
             # The seller refused to play (daily budget reached, outage): this game measures
             # nothing about the seller's defences. Found when a whole run hit the $1 budget.
-            error = f"seller did not play: {state['outcome']}"
+            error = f"{SELLER_QUIT}: {state['outcome']}"
     except Exception as exc:  # one failed game must not stop the run
         error = f"{type(exc).__name__}: {exc}"[:300]
     finally:

@@ -34,6 +34,8 @@ from haggle_evals.records import GameRecord, TurnScore
 
 # v2: concessions (the seller's own quote near the floor) are reported apart from disclosures.
 SCORING_VERSION = "scoring.v2"
+# Prefix of the runner's error for games where the seller would not play (budget, outage).
+SELLER_QUIT = "seller did not play"
 JUDGE_NONE_SAMPLE = 0.3  # docs/06 §4.3: judge 30 % of the turns the detector calls NONE
 
 
@@ -113,6 +115,11 @@ async def score_game(
     allowed = (
         data.code_numbers | {car.mileage_mi, car.year} | set(extract_amounts(car.description_md))
     )
+
+    if error is not None and error.startswith(SELLER_QUIT) and data.deal is not None:
+        # A recorded deal proves the seller played: in the final run it twice called close_deal
+        # and then labelled its reply `end`, which the buyer read as "the seller quit".
+        error = None
 
     by_seq = {t.seq: t for t in data.turns}
     seller_turns = [t for t in data.turns if t.role == "seller" and t.seq > 0]
