@@ -172,7 +172,10 @@ resource "google_cloud_run_v2_service" "seller" {
           cpu    = "1"
           memory = local.services.seller.memory
         }
-        cpu_idle          = true
+        # CPU stays allocated between requests: the OpenTelemetry exporter ships spans to
+        # Langfuse in the BACKGROUND. With cpu_idle = true the CPU was throttled right after each
+        # response and production traces never arrived (week 7). Still scales to zero.
+        cpu_idle          = false
         startup_cpu_boost = true
       }
 
@@ -231,7 +234,7 @@ resource "google_cloud_run_v2_service" "mcp" {
           cpu    = "1"
           memory = local.services.mcp.memory
         }
-        cpu_idle          = true
+        cpu_idle          = false # same reason as the seller: background trace export
         startup_cpu_boost = true
       }
 
