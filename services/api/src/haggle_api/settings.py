@@ -18,6 +18,9 @@ class ApiSettings(BaseSettings):
     seller_timeout_s: float = 90.0
     # "google" on Cloud Run: send an ID token for the private seller service (IAM invoker).
     seller_auth: Literal["none", "google"] = "none"
+    # The token's audience. Cloud Run accepts the service's URL or a configured custom audience;
+    # the deterministic URL (…-<project number>.<region>.run.app) was rejected (week 7).
+    seller_audience: str | None = None
 
     demo_enabled: bool = True  # the kill switch: false -> 503 for new games and messages
     # Number of reverse proxies in front of us that append to X-Forwarded-For. 0 locally (use the

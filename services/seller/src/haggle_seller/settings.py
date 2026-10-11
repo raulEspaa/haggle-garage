@@ -18,6 +18,7 @@ class SellerSettings(BaseSettings):
     mcp_url: str = "http://127.0.0.1:8100/mcp"
     # "google" on Cloud Run: send an ID token for the private MCP service (IAM invoker).
     mcp_auth: Literal["none", "google"] = "none"
+    mcp_audience: str | None = None  # Cloud Run custom audience (see the api's seller_audience)
     # Must equal the MCP server's seller token. Locally both read HAGGLE_MCP_SELLER_TOKEN from the
     # same .env; in the cloud each service gets its own secret (week 7).
     mcp_token: SecretStr = Field(

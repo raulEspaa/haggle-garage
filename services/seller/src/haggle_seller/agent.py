@@ -480,7 +480,7 @@ class _GoogleIdTokenAuth(httpx2.Auth):
 def _mcp_http_client_factory(settings: SellerSettings) -> Any:
     if settings.mcp_auth == "none":
         return create_mcp_http_client
-    source = IdTokenSource(settings.mcp_url.removesuffix("/mcp"))  # audience = service URL
+    source = IdTokenSource(settings.mcp_audience or settings.mcp_url.removesuffix("/mcp"))
 
     def factory(
         headers: dict[str, str] | None = None,

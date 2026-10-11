@@ -43,7 +43,7 @@ class Health(BaseModel):
 def _seller_auth(settings: ApiSettings) -> Callable[[], Awaitable[dict[str, str]]] | None:
     if settings.seller_auth == "none":
         return None
-    source = IdTokenSource(settings.seller_url)
+    source = IdTokenSource(settings.seller_audience or settings.seller_url)
 
     async def headers() -> dict[str, str]:
         return await asyncio.to_thread(source.headers)

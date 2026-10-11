@@ -32,6 +32,7 @@ locals {
       env = merge(local.common_env, {
         HAGGLE_API_SELLER_URL         = local.service_url.seller
         HAGGLE_API_SELLER_AUTH        = "google"
+        HAGGLE_API_SELLER_AUDIENCE    = "haggle-seller"
         HAGGLE_API_TRUSTED_PROXY_HOPS = "1" # Google's front end appends the real client IP
         HAGGLE_API_DAILY_BUDGET_USD   = var.daily_budget_usd
       })
@@ -49,6 +50,7 @@ locals {
         HAGGLE_SELLER_PUBLIC_URL       = local.service_url.seller # what the agent card says
         HAGGLE_SELLER_MCP_URL          = "${local.service_url.mcp}/mcp"
         HAGGLE_SELLER_MCP_AUTH         = "google"
+        HAGGLE_SELLER_MCP_AUDIENCE     = "haggle-mcp"
         HAGGLE_SELLER_DAILY_BUDGET_USD = var.daily_budget_usd
       })
       secrets = merge(local.langfuse_secrets, {
@@ -144,6 +146,9 @@ resource "google_cloud_run_v2_service" "seller" {
   location            = var.region
   ingress             = "INGRESS_TRAFFIC_ALL" # reachable, but only with an ID token (IAM)
   deletion_protection = false
+  # The `aud` the api's ID tokens carry. A token minted for the deterministic URL
+  # (haggle-seller-<project number>...) was rejected with 403, so we name the audience.
+  custom_audiences = ["haggle-seller"]
 
   template {
     service_account                  = local.identities.seller
@@ -202,6 +207,7 @@ resource "google_cloud_run_v2_service" "mcp" {
   location            = var.region
   ingress             = "INGRESS_TRAFFIC_ALL"
   deletion_protection = false
+  custom_audiences    = ["haggle-mcp"]
 
   template {
     service_account                  = local.identities.mcp
