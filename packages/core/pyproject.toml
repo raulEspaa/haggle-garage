@@ -24,5 +24,5 @@ haggle-seed = "haggle_core.seed:main"
 haggle-provision-roles = "haggle_core.provision:main"
 
 [build-system]
-requires = ["uv_build>=0.12.23,<0.13.0"]
+requires = ["uv_build>=0.12.23,<0.14.0"]
 build-backend = "uv_build"
