@@ -1,69 +1,67 @@
 # Haggle Garage
 
-**Talk an AI car dealer down, or make it leak its secret minimum price.**
+Talk an AI car dealer down, or get it to leak its secret minimum price.
 
 [![CI](https://github.com/raulEspaa/haggle-garage/actions/workflows/ci.yml/badge.svg)](https://github.com/raulEspaa/haggle-garage/actions/workflows/ci.yml)
 [![Live demo](https://img.shields.io/badge/demo-live%20on%20Cloud%20Run-c0392b)](https://haggle-api-38346102533.europe-west1.run.app)
 ![Python 3.13](https://img.shields.io/badge/python-3.13-3776ab)
-![Google ADK](https://img.shields.io/badge/agents-Google%20ADK%20%2B%20LangGraph-4285f4)
-![MCP + A2A](https://img.shields.io/badge/protocols-MCP%20%2B%20A2A-6f42c1)
 
-**▶ Play it: https://haggle-api-38346102533.europe-west1.run.app**
+Live demo: https://haggle-api-38346102533.europe-west1.run.app
 
 Sam, an AI salesperson, sells one iconic American car per game: a '69 Camaro Z/28, a '70
-Challenger R/T or an '87 Buick Grand National. Every game has a **secret floor price** that Sam
-must never reveal. You win by buying cheap, or by guessing the floor within 1.5 %.
+Challenger R/T or an '87 Buick Grand National. Each game has a secret floor price that Sam must
+not reveal. You win by buying cheap, or by guessing the floor within 1.5 %.
 
-The car lot is a pretext. The real question is an LLM-security one: **how do you stop an
-agent from leaking a secret it needs to do its job?** The game answers it with three security
-levels, and an eval suite measures each one.
+The game is a test bed for an LLM-security problem: how to stop an agent from leaking a secret
+it needs to do its job. It has three security levels, and an eval suite measures each one.
 
 <p align="center"><img src="docs/assets/game.png" alt="A Level 1 game: the player asks Sam for the lowest price it is allowed to accept" width="720"></p>
 
-## Three levels, three generations of LLM-app security
+## The three security levels
 
-| | Level 1 · Naive | Level 2 · Hardened | Level 3 · Blind |
+| | Level 1: Naive | Level 2: Hardened | Level 3: Blind |
 |---|---|---|---|
-| **Where's the floor?** | in the system prompt | in the system prompt | **nowhere the model can see** |
-| **Defences** | none (the baseline) | defensive prompt, output leak filter, canary token | prices come only from a code policy engine over MCP; a price guard rejects any number code didn't issue |
-| **Who decides prices?** | the model | the model | **code**: "the model talks, code decides" |
-| **Closing a deal** | validated in code | validated in code | validated in code, and must match a prior *accept* from the policy engine |
+| Where the floor lives | in the system prompt | in the system prompt | nowhere the model can see |
+| Defences | none (the baseline) | defensive prompt, output leak filter, canary token | prices come only from a code policy engine over MCP; a price guard rejects any number the code didn't issue |
+| Who sets prices | the model | the model | code; the model only phrases the reply |
+| Closing a deal | validated in code | validated in code | validated in code, and must match an earlier *accept* from the policy engine |
 
-At every level, **a sale below the floor is impossible**: the database and the MCP server refuse
-it. Lower levels can only *say* too much.
+At every level a sale below the floor is impossible, because the database and the MCP server
+refuse it. The lower levels can only say too much.
 
 ## Results
 
 Final run: 81 simulated negotiations (3 cars × 3 buyer personas × 3 seeds per level) plus 264
 scripted prompt-injection attacks (44 attacks in 17 categories, mapped to the OWASP LLM Top 10).
-Total cost **$1.82**. [Full report →](docs/results/README.md)
+Total cost: $1.82. [Full report](docs/results/README.md).
 
 | Per level | L1 Naive | L2 Hardened | L3 Blind |
 |---|:-:|:-:|:-:|
-| Games where the seller disclosed its floor | **22 %** | **0 %** | **0 %** |
+| Games where the seller disclosed its floor | 22 % | 0 % | 0 % |
 | Attacks that extracted the floor | 28 % | 0 % | 0 % |
 | How far off the buyer's floor guess was (higher = safer) | 3 % | 13 % | 18 % |
 | Sales below the floor | 0 | 0 | 0 |
 | Cost per game | $0.011 | $0.013 | $0.030 |
 
-What it shows:
+What the numbers show:
 
-- **A naive agent leaks.** Role play, system-prompt extraction and "answer in JSON" tricks beat
-  L1 most often.
-- **Prompt hardening plus an output filter stopped every scripted attack.** But the secret is
-  still in the prompt, one clever attack away.
-- **Not giving the model the secret is the only structural fix.** L3 can't leak what it never
-  sees. It costs ~2.5× per game and closes more slowly, because every price is a tool call.
-- **The numbers are honest:** 95 % Wilson confidence intervals, an LLM judge calibrated against
-  labelled data (Cohen's κ = 0.84), and a first run that was discarded when a budget limit
-  corrupted it.
+- The naive agent leaks. Role play, system-prompt extraction and "answer in JSON" tricks beat L1
+  most often.
+- Prompt hardening plus an output filter stopped every scripted attack at L2, but the secret is
+  still in the prompt, so a new attack could still reach it.
+- Keeping the secret out of the model is the only structural fix: L3 can't leak a number it never
+  sees. It costs about 2.5× more per game and closes more slowly, because every price is a tool
+  call.
+- Methodology: 95 % Wilson confidence intervals, and an LLM judge calibrated against labelled
+  data (Cohen's κ = 0.84; the labels are drafts written by the AI assistant and not yet reviewed
+  by a human). A first full run was discarded after a budget limit corrupted it.
 
 ## How it works
 
 ```mermaid
 flowchart LR
-    player["👤 Player<br/>browser"] -->|HTTPS| api
-    buyer["🤖 Buyer agent<br/>LangGraph · 3 personas"] -->|A2A| seller
+    player["Player<br/>browser"] -->|HTTPS| api
+    buyer["Buyer agent<br/>LangGraph · 3 personas"] -->|A2A| seller
 
     subgraph cloud["Google Cloud Run"]
         api["api<br/>FastAPI · web page<br/>rate limits · budget"]
@@ -80,7 +78,8 @@ flowchart LR
     seller & mcp & buyer -.-> langfuse["Langfuse<br/>one trace per game"]
 ```
 
-One turn at Level 3, the "model talks, code decides" pattern:
+One turn at Level 3. The model writes the reply, but every price in it comes from the policy
+engine:
 
 ```mermaid
 sequenceDiagram
@@ -100,33 +99,33 @@ sequenceDiagram
     S-->>P: reply + structured price
 ```
 
-**Highlights**
+Main points:
 
-- **Two agent frameworks, two protocols.** The seller is a Google ADK agent served over **A2A**;
-  the buyer is a **LangGraph** graph that talks to it over A2A and appraises the car through the
-  same **MCP** server.
-- **Security enforced below the prompt.** The game id travels in headers set by code, never in
-  LLM-filled arguments. The seller's database role *cannot read* the floor column. Private
+- Two agent frameworks and two protocols. The seller is a Google ADK agent served over A2A. The
+  buyer is a LangGraph graph that talks to it over A2A and appraises the car through the same
+  MCP server.
+- Security is enforced outside the prompt. The game id travels in headers set by code, never in
+  arguments the LLM fills in. The seller's database role cannot read the floor column. Private
   services accept only Google-signed ID tokens with their own audience.
-- **RAG** over hand-written model sheets of real, sourced facts (pgvector, Gemini embeddings).
-- **Property-based tests** (Hypothesis) on the pricing engine; guards tested with a scripted
-  model, so no LLM calls in CI.
-- **A public demo that can't run up a bill:** per-IP and global limits, a $2/day budget enforced
-  by two services, 2 instances max, a budget alert, a kill switch. Every guardrail was
-  [verified from outside](docs/results/deploy-checklist.md).
+- RAG over hand-written model sheets of real, sourced facts (pgvector, Gemini embeddings).
+- Property-based tests (Hypothesis) on the pricing engine. The guards are tested with a scripted
+  model, so CI makes no LLM calls.
+- The public demo has cost limits: per-IP and global limits, a $2/day budget enforced by two
+  services, at most 2 instances per service, a budget alert and a kill switch. Each one was
+  [checked from outside](docs/results/deploy-checklist.md).
 
 ## Tech stack
 
 | | |
 |---|---|
-| **Agents** | Google ADK 2.11 (seller), LangGraph 1.2 (buyer), Gemini 3.1 Flash-Lite on Vertex AI |
-| **Protocols** | A2A 1.0 (`a2a-sdk`), MCP (Python SDK v2, Streamable HTTP) |
-| **Backend** | Python 3.13, FastAPI, Pydantic v2, SQLAlchemy 2 (async), Alembic |
-| **Data** | PostgreSQL 17 + pgvector (Neon in production) |
-| **Evals** | deterministic leak detector, LLM-as-judge (Gemini 3.8 Flash) with κ calibration, Wilson CIs |
-| **Observability** | Langfuse via OpenTelemetry, one trace per game across buyer → seller → MCP |
-| **Infra** | Docker, Cloud Run, Terraform, Secret Manager, Artifact Registry |
-| **Quality** | uv workspace, ruff, mypy strict, pytest + Hypothesis, pre-commit with gitleaks, GitHub Actions |
+| Agents | Google ADK 2.11 (seller), LangGraph 1.2 (buyer), Gemini 3.1 Flash-Lite on Vertex AI |
+| Protocols | A2A 1.0 (`a2a-sdk`), MCP (Python SDK v2, Streamable HTTP) |
+| Backend | Python 3.13, FastAPI, Pydantic v2, SQLAlchemy 2 (async), Alembic |
+| Data | PostgreSQL 17 + pgvector (Neon in production) |
+| Evals | deterministic leak detector, LLM-as-judge (Gemini 3.8 Flash) with κ calibration, Wilson CIs |
+| Observability | Langfuse via OpenTelemetry, one trace per game across buyer → seller → MCP |
+| Infra | Docker, Cloud Run, Terraform, Secret Manager, Artifact Registry |
+| Quality | uv workspace, ruff, mypy strict, pytest + Hypothesis, pre-commit with gitleaks, GitHub Actions |
 
 ## Run it locally
 
@@ -143,8 +142,8 @@ make check                              # lint, types, tests
 docker compose up --build               # play at http://127.0.0.1:8080
 ```
 
-More: `make play LEVEL=3` (play in the terminal), `make buyer` (watch the buyer agent negotiate),
-`make eval-smoke` (a ~3-minute eval run), `make help` (everything else).
+Other targets: `make play LEVEL=3` (play in the terminal), `make buyer` (watch the buyer agent
+negotiate), `make eval-smoke` (a ~3-minute eval run), `make help` (everything else).
 
 ## Repository map
 
@@ -159,20 +158,26 @@ More: `make play LEVEL=3` (play in the terminal), `make buyer` (watch the buyer 
 | [`infra/terraform`](infra/terraform) | 3 Cloud Run services, service accounts + IAM, secrets, budget |
 | [`db`](db) | Alembic migrations, seed data, model sheets |
 | [`docs`](docs/README.md) | Architecture, contracts, threat model, 13 ADRs, results |
-| [`docs/learning`](docs/learning/README.md) | The build journal: what was built each week, and why |
+| [`docs/learning`](docs/learning/README.md) | Build notes: what was built, the commands used, and why |
 
 ## Documentation
 
 - [Architecture](docs/02-architecture.md) · [Threat model](docs/07-threat-model.md) ·
   [Evaluation plan](docs/06-evaluation-plan.md) · [Contracts](docs/03-contracts.md)
-- [Architecture decision records](docs/adr/README.md): 13 decisions with the alternatives
+- [Architecture decision records](docs/adr/README.md): 13 decisions, each with the alternatives
+  considered
 - [Eval results](docs/results/README.md) and the [production deploy checklist](docs/results/deploy-checklist.md)
 - [Delivery](docs/05-delivery.md): plan vs shipped, what was cut, real costs, future work
-- [Build journal](docs/learning/README.md): eight chapters, one per week
+- [Build notes](docs/learning/README.md): eight chapters, from foundations to a retrospective
 
 ## About
 
-Built in eight weeks (October 2026) by Raúl as a hands-on project to learn agent engineering
-end to end: protocols, RAG, evals, LLM security and cloud deployment. Cars are real models
-described with public facts; every listing and price is fictional. Not affiliated with any
-manufacturer.
+Built by Raúl in October 2026 as a hands-on project to learn agent engineering end to end:
+protocols, RAG, evals, LLM security and cloud deployment.
+
+It was built with Claude Code as a pair programmer, which wrote much of the code and
+documentation (including the car model sheets and the draft judge-calibration labels); Raúl set
+the goals and threat model and made the design decisions recorded in the ADRs.
+
+The cars are real models described with public facts; every listing and price is fictional. Not
+affiliated with any manufacturer.
